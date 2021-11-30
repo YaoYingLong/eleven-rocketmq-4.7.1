@@ -22,8 +22,7 @@ import java.lang.reflect.Constructor;
 import org.apache.rocketmq.store.MessageStore;
 
 public final class MessageStoreFactory {
-    public final static MessageStore build(MessageStorePluginContext context, MessageStore messageStore)
-        throws IOException {
+    public final static MessageStore build(MessageStorePluginContext context, MessageStore messageStore) throws IOException {
         String plugin = context.getBrokerConfig().getMessageStorePlugIn();
         if (plugin != null && plugin.trim().length() != 0) {
             String[] pluginClasses = plugin.split(",");
@@ -35,8 +34,7 @@ public final class MessageStoreFactory {
                     Constructor<AbstractPluginMessageStore> construct = clazz.getConstructor(MessageStorePluginContext.class, MessageStore.class);
                     messageStore = construct.newInstance(context, messageStore);
                 } catch (Throwable e) {
-                    throw new RuntimeException(String.format(
-                        "Initialize plugin's class %s not found!", pluginClass), e);
+                    throw new RuntimeException(String.format("Initialize plugin's class %s not found!", pluginClass), e);
                 }
             }
         }

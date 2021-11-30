@@ -64,15 +64,12 @@ public class IndexService {
                 try {
                     IndexFile f = new IndexFile(file.getPath(), this.hashSlotNum, this.indexNum, 0, 0);
                     f.load();
-
                     if (!lastExitOK) {
-                        if (f.getEndTimestamp() > this.defaultMessageStore.getStoreCheckpoint()
-                            .getIndexMsgTimestamp()) {
+                        if (f.getEndTimestamp() > this.defaultMessageStore.getStoreCheckpoint().getIndexMsgTimestamp()) {
                             f.destroy(0);
                             continue;
                         }
                     }
-
                     log.info("load index file OK, " + f.getFileName());
                     this.indexFileList.add(f);
                 } catch (IOException e) {
@@ -83,7 +80,6 @@ public class IndexService {
                 }
             }
         }
-
         return true;
     }
 
@@ -268,12 +264,10 @@ public class IndexService {
      */
     public IndexFile retryGetAndCreateIndexFile() {
         IndexFile indexFile = null;
-
         for (int times = 0; null == indexFile && times < MAX_TRY_IDX_CREATE; times++) {
             indexFile = this.getAndCreateLastIndexFile();
             if (null != indexFile)
                 break;
-
             try {
                 log.info("Tried to create index file " + times + " times");
                 Thread.sleep(1000);
@@ -281,12 +275,10 @@ public class IndexService {
                 log.error("Interrupted", e);
             }
         }
-
         if (null == indexFile) {
             this.defaultMessageStore.getAccessRights().makeIndexFileError();
             log.error("Mark index file cannot build flag");
         }
-
         return indexFile;
     }
 
@@ -295,7 +287,6 @@ public class IndexService {
         IndexFile prevIndexFile = null;
         long lastUpdateEndPhyOffset = 0;
         long lastUpdateIndexTimestamp = 0;
-
         {
             this.readWriteLock.readLock().lock();
             if (!this.indexFileList.isEmpty()) {
@@ -314,12 +305,8 @@ public class IndexService {
 
         if (indexFile == null) {
             try {
-                String fileName =
-                    this.storePath + File.separator
-                        + UtilAll.timeMillisToHumanString(System.currentTimeMillis());
-                indexFile =
-                    new IndexFile(fileName, this.hashSlotNum, this.indexNum, lastUpdateEndPhyOffset,
-                        lastUpdateIndexTimestamp);
+                String fileName = this.storePath + File.separator + UtilAll.timeMillisToHumanString(System.currentTimeMillis());
+                indexFile = new IndexFile(fileName, this.hashSlotNum, this.indexNum, lastUpdateEndPhyOffset, lastUpdateIndexTimestamp);
                 this.readWriteLock.writeLock().lock();
                 this.indexFileList.add(indexFile);
             } catch (Exception e) {
@@ -327,7 +314,6 @@ public class IndexService {
             } finally {
                 this.readWriteLock.writeLock().unlock();
             }
-
             if (indexFile != null) {
                 final IndexFile flushThisFile = prevIndexFile;
                 Thread flushThread = new Thread(new Runnable() {
@@ -336,27 +322,21 @@ public class IndexService {
                         IndexService.this.flush(flushThisFile);
                     }
                 }, "FlushIndexFileThread");
-
                 flushThread.setDaemon(true);
                 flushThread.start();
             }
         }
-
         return indexFile;
     }
 
     public void flush(final IndexFile f) {
         if (null == f)
             return;
-
         long indexMsgTimestamp = 0;
-
         if (f.isWriteFull()) {
             indexMsgTimestamp = f.getEndTimestamp();
         }
-
         f.flush();
-
         if (indexMsgTimestamp > 0) {
             this.defaultMessageStore.getStoreCheckpoint().setIndexMsgTimestamp(indexMsgTimestamp);
             this.defaultMessageStore.getStoreCheckpoint().flush();

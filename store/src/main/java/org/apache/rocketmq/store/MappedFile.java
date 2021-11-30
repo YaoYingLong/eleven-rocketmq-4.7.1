@@ -289,7 +289,6 @@ public class MappedFile extends ReferenceResource {
         if (this.isAbleToFlush(flushLeastPages)) {
             if (this.hold()) {
                 int value = getReadPosition();
-
                 try {
                     //We only append data to fileChannel or mappedByteBuffer, never both.
                     //这个force方法就是强迫把你写入内存的数据刷入到磁盘文件里去。
@@ -302,7 +301,6 @@ public class MappedFile extends ReferenceResource {
                 } catch (Throwable e) {
                     log.error("Error occurred when force data to disk.", e);
                 }
-
                 this.flushedPosition.set(value);
                 this.release();
             } else {

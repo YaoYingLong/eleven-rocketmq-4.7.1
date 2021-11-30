@@ -62,14 +62,11 @@ public class BrokerStartup {
         try {
             //K1 Controller启动
             controller.start();
-
             String tip = "The broker[" + controller.getBrokerConfig().getBrokerName() + ", "
                     + controller.getBrokerAddr() + "] boot success. serializeType=" + RemotingCommand.getSerializeTypeConfigInThisServer();
-
             if (null != controller.getBrokerConfig().getNamesrvAddr()) {
                 tip += " and name server is " + controller.getBrokerConfig().getNamesrvAddr();
             }
-
             log.info(tip);
             System.out.printf("%s%n", tip);
             return controller;
@@ -77,7 +74,6 @@ public class BrokerStartup {
             e.printStackTrace();
             System.exit(-1);
         }
-
         return null;
     }
 
@@ -89,12 +85,12 @@ public class BrokerStartup {
 
     //K1 创建Broker核心配置
     public static BrokerController createBrokerController(String[] args) {
-        System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
+        System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION)); // 将当前RocketMQ版本号设置到环境变量中
         if (null == System.getProperty(NettySystemConfig.COM_ROCKETMQ_REMOTING_SOCKET_SNDBUF_SIZE)) {
-            NettySystemConfig.socketSndbufSize = 131072;
+            NettySystemConfig.socketSndbufSize = 131072; // remoting socket sndbuf size
         }
         if (null == System.getProperty(NettySystemConfig.COM_ROCKETMQ_REMOTING_SOCKET_RCVBUF_SIZE)) {
-            NettySystemConfig.socketRcvbufSize = 131072;
+            NettySystemConfig.socketRcvbufSize = 131072; // remoting socket rcvbuf size
         }
         try {
             //PackageConflictDetect.detectFastjson();
@@ -108,8 +104,7 @@ public class BrokerStartup {
             final NettyServerConfig nettyServerConfig = new NettyServerConfig();
             final NettyClientConfig nettyClientConfig = new NettyClientConfig();
             //TLS加密相关
-            nettyClientConfig.setUseTLS(Boolean.parseBoolean(System.getProperty(TLS_ENABLE,
-                    String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING))));
+            nettyClientConfig.setUseTLS(Boolean.parseBoolean(System.getProperty(TLS_ENABLE, String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING))));
             //Netty服务端的监听端口10911
             nettyServerConfig.setListenPort(10911);
             //K2 这个明显是Broker用来存储消息的一些配置信息。
@@ -117,7 +112,7 @@ public class BrokerStartup {
             //如果是SLAVE，会设置一个参数。这参数干嘛的，可以去官网查查。
             if (BrokerRole.SLAVE == messageStoreConfig.getBrokerRole()) {
                 int ratio = messageStoreConfig.getAccessMessageInMemoryMaxRatio() - 10;
-                messageStoreConfig.setAccessMessageInMemoryMaxRatio(ratio);
+                messageStoreConfig.setAccessMessageInMemoryMaxRatio(ratio); // 访问消息内存最大比率
             }
             //这段代码就比较熟悉了。处理命令行参数，最后全部打印出来。
             if (commandLine.hasOption('c')) {
@@ -140,13 +135,11 @@ public class BrokerStartup {
             }
             //填充brokerConfig
             MixAll.properties2Object(ServerUtil.commandLine2Properties(commandLine), brokerConfig);
-
             if (null == brokerConfig.getRocketmqHome()) {
                 System.out.printf("Please set the %s variable in your environment to match the location of the RocketMQ installation", MixAll.ROCKETMQ_HOME_ENV);
                 System.exit(-2);
             }
-
-            String namesrvAddr = brokerConfig.getNamesrvAddr();
+            String namesrvAddr = brokerConfig.getNamesrvAddr(); // 获取NameServer地址
             if (null != namesrvAddr) {
                 try {
                     String[] addrArray = namesrvAddr.split(";");
@@ -154,9 +147,7 @@ public class BrokerStartup {
                         RemotingUtil.string2SocketAddress(addr);
                     }
                 } catch (Exception e) {
-                    System.out.printf(
-                            "The Name Server Address[%s] illegal, please set it as follows, \"127.0.0.1:9876;192.168.0.1:9876\"%n",
-                            namesrvAddr);
+                    System.out.printf("The Name Server Address[%s] illegal, please set it as follows, \"127.0.0.1:9876;192.168.0.1:9876\"%n", namesrvAddr);
                     System.exit(-3);
                 }
             }
@@ -171,7 +162,6 @@ public class BrokerStartup {
                         System.out.printf("Slave's brokerId must be > 0");
                         System.exit(-3);
                     }
-
                     break;
                 default:
                     break;
@@ -180,8 +170,7 @@ public class BrokerStartup {
             if (messageStoreConfig.isEnableDLegerCommitLog()) {
                 brokerConfig.setBrokerId(-1);
             }
-
-            messageStoreConfig.setHaListenPort(nettyServerConfig.getListenPort() + 1);
+            messageStoreConfig.setHaListenPort(nettyServerConfig.getListenPort() + 1); // 主从同步端口
             //日志相关的代码。可以稍后再关注
             LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
             JoranConfigurator configurator = new JoranConfigurator();
@@ -211,14 +200,14 @@ public class BrokerStartup {
             MixAll.printObjectProperties(log, nettyServerConfig);
             MixAll.printObjectProperties(log, nettyClientConfig);
             MixAll.printObjectProperties(log, messageStoreConfig);
-            //创建Controllerg
+            //创建BrokerController
             final BrokerController controller = new BrokerController(
                     brokerConfig,
                     nettyServerConfig,
                     nettyClientConfig,
                     messageStoreConfig);
             // remember all configs to prevent discard
-            controller.getConfiguration().registerConfig(properties);
+            controller.getConfiguration().registerConfig(properties); // 存储所有配置防止丢失
             //初始化 注意从中理清楚Broker的组件结构
             boolean initResult = controller.initialize();
             if (!initResult) {

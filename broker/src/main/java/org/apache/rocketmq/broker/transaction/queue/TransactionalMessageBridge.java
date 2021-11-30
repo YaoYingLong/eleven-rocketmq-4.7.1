@@ -62,8 +62,7 @@ public class TransactionalMessageBridge {
         try {
             this.brokerController = brokerController;
             this.store = store;
-            this.storeHost =
-                new InetSocketAddress(brokerController.getBrokerConfig().getBrokerIP1(),
+            this.storeHost = new InetSocketAddress(brokerController.getBrokerConfig().getBrokerIP1(),
                     brokerController.getNettyServerConfig().getListenPort());
         } catch (Exception e) {
             LOGGER.error("Init TransactionBridge error", e);

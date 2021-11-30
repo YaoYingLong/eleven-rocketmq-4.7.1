@@ -40,23 +40,17 @@ public class StoreCheckpoint {
         File file = new File(scpPath);
         MappedFile.ensureDirOK(file.getParent());
         boolean fileExists = file.exists();
-
         this.randomAccessFile = new RandomAccessFile(file, "rw");
         this.fileChannel = this.randomAccessFile.getChannel();
         this.mappedByteBuffer = fileChannel.map(MapMode.READ_WRITE, 0, MappedFile.OS_PAGE_SIZE);
-
         if (fileExists) {
             log.info("store checkpoint file exists, " + scpPath);
             this.physicMsgTimestamp = this.mappedByteBuffer.getLong(0);
             this.logicsMsgTimestamp = this.mappedByteBuffer.getLong(8);
             this.indexMsgTimestamp = this.mappedByteBuffer.getLong(16);
-
-            log.info("store checkpoint file physicMsgTimestamp " + this.physicMsgTimestamp + ", "
-                + UtilAll.timeMillisToHumanString(this.physicMsgTimestamp));
-            log.info("store checkpoint file logicsMsgTimestamp " + this.logicsMsgTimestamp + ", "
-                + UtilAll.timeMillisToHumanString(this.logicsMsgTimestamp));
-            log.info("store checkpoint file indexMsgTimestamp " + this.indexMsgTimestamp + ", "
-                + UtilAll.timeMillisToHumanString(this.indexMsgTimestamp));
+            log.info("store checkpoint file physicMsgTimestamp " + this.physicMsgTimestamp + ", " + UtilAll.timeMillisToHumanString(this.physicMsgTimestamp));
+            log.info("store checkpoint file logicsMsgTimestamp " + this.logicsMsgTimestamp + ", " + UtilAll.timeMillisToHumanString(this.logicsMsgTimestamp));
+            log.info("store checkpoint file indexMsgTimestamp " + this.indexMsgTimestamp + ", " + UtilAll.timeMillisToHumanString(this.indexMsgTimestamp));
         } else {
             log.info("store checkpoint file not exists, " + scpPath);
         }
@@ -64,10 +58,8 @@ public class StoreCheckpoint {
 
     public void shutdown() {
         this.flush();
-
         // unmap mappedByteBuffer
         MappedFile.clean(this.mappedByteBuffer);
-
         try {
             this.fileChannel.close();
         } catch (IOException e) {

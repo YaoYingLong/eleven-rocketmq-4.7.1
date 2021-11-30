@@ -79,9 +79,7 @@ public class HAService {
 
     public boolean isSlaveOK(final long masterPutWhere) {
         boolean result = this.connectionCount.get() > 0;
-        result =
-            result
-                && ((masterPutWhere - this.push2SlaveMaxOffset.get()) < this.defaultMessageStore
+        result = result && ((masterPutWhere - this.push2SlaveMaxOffset.get()) < this.defaultMessageStore
                 .getMessageStoreConfig().getHaSlaveFallbehindMax());
         return result;
     }
@@ -285,14 +283,11 @@ public class HAService {
                             this.notifyTransferObject.waitForRunning(1000);
                             transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
                         }
-
                         if (!transferOK) {
                             log.warn("transfer messsage to slave timeout, " + req.getNextOffset());
                         }
-
                         req.wakeupCustomer(transferOK ? PutMessageStatus.PUT_OK : PutMessageStatus.FLUSH_SLAVE_TIMEOUT);
                     }
-
                     this.requestsRead.clear();
                 }
             }

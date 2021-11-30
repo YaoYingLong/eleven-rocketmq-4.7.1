@@ -66,8 +66,7 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
     }
 
     @Override
-    public RemotingCommand processRequest(ChannelHandlerContext ctx,
-                                          RemotingCommand request) throws RemotingCommandException {
+    public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws RemotingCommandException {
         RemotingCommand response = null;
         try {
             response = asyncProcessRequest(ctx, request).get();
@@ -82,8 +81,7 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
         asyncProcessRequest(ctx, request).thenAcceptAsync(responseCallback::callback, this.brokerController.getSendMessageExecutor());
     }
 
-    public CompletableFuture<RemotingCommand> asyncProcessRequest(ChannelHandlerContext ctx,
-                                                                  RemotingCommand request) throws RemotingCommandException {
+    public CompletableFuture<RemotingCommand> asyncProcessRequest(ChannelHandlerContext ctx, RemotingCommand request) throws RemotingCommandException {
         final SendMessageContext mqtraceContext;
         switch (request.getCode()) {
             case RequestCode.CONSUMER_SEND_MSG_BACK:

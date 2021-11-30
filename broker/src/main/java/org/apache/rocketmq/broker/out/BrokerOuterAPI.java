@@ -107,7 +107,6 @@ public class BrokerOuterAPI {
         for (String addr : addrArray) {
             lst.add(addr);
         }
-
         this.remotingClient.updateNameServerAddressList(lst);
     }
 

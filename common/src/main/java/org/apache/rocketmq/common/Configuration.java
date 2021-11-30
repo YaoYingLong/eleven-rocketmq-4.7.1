@@ -97,10 +97,8 @@ public class Configuration {
         if (extProperties == null) {
             return this;
         }
-
         try {
             readWriteLock.writeLock().lockInterruptibly();
-
             try {
                 merge(extProperties, this.allConfigs);
             } finally {
@@ -109,7 +107,6 @@ public class Configuration {
         } catch (InterruptedException e) {
             log.error("register lock error. {}" + extProperties);
         }
-
         return this;
     }
 
@@ -130,7 +127,7 @@ public class Configuration {
                 // check
                 this.storePathField = object.getClass().getDeclaredField(fieldName);
                 assert this.storePathField != null
-                    && !Modifier.isStatic(this.storePathField.getModifiers());
+                        && !Modifier.isStatic(this.storePathField.getModifiers());
                 this.storePathField.setAccessible(true);
             } catch (NoSuchFieldException e) {
                 throw new RuntimeException(e);

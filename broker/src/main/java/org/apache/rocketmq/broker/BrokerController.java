@@ -243,7 +243,7 @@ public class BrokerController {
     //K1 Broker初始化过程
     public boolean initialize() throws CloneNotSupportedException {
         //加载磁盘上的配置信息。这些配置信息就用到了MessageStoreConfig
-        boolean result = this.topicConfigManager.load();
+        boolean result = this.topicConfigManager.load(); // 加载配置文件broker.conf中配置的路径文件内容到内存中
         result = result && this.consumerOffsetManager.load();
         result = result && this.subscriptionGroupManager.load();
         result = result && this.consumerFilterManager.load();
@@ -251,9 +251,7 @@ public class BrokerController {
         if (result) {
             try {
                 //消息存储管理组件，管理磁盘上的消息的。
-                this.messageStore =
-                    new DefaultMessageStore(this.messageStoreConfig, this.brokerStatsManager, this.messageArrivingListener,
-                        this.brokerConfig);
+                this.messageStore = new DefaultMessageStore(this.messageStoreConfig, this.brokerStatsManager, this.messageArrivingListener, this.brokerConfig);
                 //如果启用了Dledger，他就初始化一堆Dledger相关的组件
                 if (messageStoreConfig.isEnableDLegerCommitLog()) {
                     DLedgerRoleChangeHandler roleChangeHandler = new DLedgerRoleChangeHandler(this, (DefaultMessageStore) messageStore);
@@ -261,8 +259,7 @@ public class BrokerController {
                 }
                 //broker的统计组件
                 this.brokerStats = new BrokerStats((DefaultMessageStore) this.messageStore);
-                //load plugin
-                //加载插件？
+                //load plugin 加载插件？
                 MessageStorePluginContext context = new MessageStorePluginContext(messageStoreConfig, brokerStatsManager, messageArrivingListener, brokerConfig);
                 this.messageStore = MessageStoreFactory.build(context, this.messageStore);
                 this.messageStore.getDispatcherList().addFirst(new CommitLogDispatcherCalcBitMap(this.brokerConfig, this.consumerFilterManager));
@@ -271,8 +268,7 @@ public class BrokerController {
                 log.error("Failed to initialize", e);
             }
         }
-
-        result = result && this.messageStore.load();
+        result = result && this.messageStore.load(); // Broker文件恢复
         //K2 Broker的Netty组件。注意，Broker需要既是服务端(接收Producer和Consumer的请求)，又是客户端(要往NameServer和Producer发送请求)。
         if (result) {
             //Netty网络组件
@@ -313,9 +309,7 @@ public class BrokerController {
                 this.queryThreadPoolQueue,
                 new ThreadFactoryImpl("QueryMessageThread_"));
             //这个一看就是管理Broker的一些命令执行的线程池
-            this.adminBrokerExecutor =
-                Executors.newFixedThreadPool(this.brokerConfig.getAdminBrokerThreadPoolNums(), new ThreadFactoryImpl(
-                    "AdminBrokerThread_"));
+            this.adminBrokerExecutor = Executors.newFixedThreadPool(this.brokerConfig.getAdminBrokerThreadPoolNums(), new ThreadFactoryImpl("AdminBrokerThread_"));
             //这个就是管理客户端的线程池
             this.clientManageExecutor = new ThreadPoolExecutor(
                 this.brokerConfig.getClientManageThreadPoolNums(),
@@ -341,9 +335,7 @@ public class BrokerController {
                 this.endTransactionThreadPoolQueue,
                 new ThreadFactoryImpl("EndTransactionThread_"));
             //管理consumer的线程池
-            this.consumerManageExecutor =
-                Executors.newFixedThreadPool(this.brokerConfig.getConsumerManageThreadPoolNums(), new ThreadFactoryImpl(
-                    "ConsumerManageThread_"));
+            this.consumerManageExecutor = Executors.newFixedThreadPool(this.brokerConfig.getConsumerManageThreadPoolNums(), new ThreadFactoryImpl("ConsumerManageThread_"));
             //注册各种处理器。用上了之前那一大堆的线程池。
             this.registerProcessor();
             //又是一些后台定时任务
@@ -360,7 +352,7 @@ public class BrokerController {
                     }
                 }
             }, initialDelay, period, TimeUnit.MILLISECONDS);
-            //定时进行consumer消费offset持久化到磁盘的任务
+            //定时进行consumer消费offset持久化到磁盘的任务，10s后开始每5s执行一次
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -406,7 +398,6 @@ public class BrokerController {
             }, 10, 1, TimeUnit.SECONDS);
             //定时进行落后commitlog分发的任务
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-
                 @Override
                 public void run() {
                     try {
@@ -525,24 +516,20 @@ public class BrokerController {
             log.info("The broker dose not enable acl");
             return;
         }
-
         List<AccessValidator> accessValidators = ServiceProvider.load(ServiceProvider.ACL_VALIDATOR_ID, AccessValidator.class);
         if (accessValidators == null || accessValidators.isEmpty()) {
             log.info("The broker dose not load the AccessValidator");
             return;
         }
-
         for (AccessValidator accessValidator: accessValidators) {
             final AccessValidator validator = accessValidator;
             accessValidatorMap.put(validator.getClass(),validator);
             this.registerServerRPCHook(new RPCHook() {
-
                 @Override
                 public void doBeforeRequest(String remoteAddr, RemotingCommand request) {
                     //Do not catch the exception
                     validator.validate(validator.parse(request, remoteAddr));
                 }
-
                 @Override
                 public void doAfterResponse(String remoteAddr, RemotingCommand request, RemotingCommand response) {
                 }
@@ -552,7 +539,6 @@ public class BrokerController {
 
 
     private void initialRpcHooks() {
-
         List<RPCHook> rpcHooks = ServiceProvider.load(ServiceProvider.RPC_HOOK_ID, RPCHook.class);
         if (rpcHooks == null || rpcHooks.isEmpty()) {
             return;

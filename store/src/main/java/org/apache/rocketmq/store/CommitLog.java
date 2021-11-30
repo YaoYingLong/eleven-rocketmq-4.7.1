@@ -158,7 +158,6 @@ public class CommitLog {
             SelectMappedBufferResult result = mappedFile.selectMappedBuffer(pos);
             return result;
         }
-
         return null;
     }
 
@@ -243,12 +242,10 @@ public class CommitLog {
      *
      * @return 0 Come the end of the file // >0 Normal messages // -1 Message checksum failure
      */
-    public DispatchRequest checkMessageAndReturnSize(java.nio.ByteBuffer byteBuffer, final boolean checkCRC,
-        final boolean readBody) {
+    public DispatchRequest checkMessageAndReturnSize(java.nio.ByteBuffer byteBuffer, final boolean checkCRC, final boolean readBody) {
         try {
             // 1 TOTAL SIZE
             int totalSize = byteBuffer.getInt();
-
             // 2 MAGIC CODE
             int magicCode = byteBuffer.getInt();
             switch (magicCode) {
@@ -780,8 +777,7 @@ public class CommitLog {
     public PutMessageResult putMessage(final MessageExtBrokerInner msg) {
         // Set the storage time
         msg.setStoreTimestamp(System.currentTimeMillis());
-        // Set the message body BODY CRC (consider the most appropriate setting
-        // on the client)
+        // Set the message body BODY CRC (consider the most appropriate setting on the client)
         msg.setBodyCRC(UtilAll.crc32(msg.getBody()));
         // Back to Results
         AppendMessageResult result = null;
@@ -792,39 +788,31 @@ public class CommitLog {
         int queueId = msg.getQueueId();
 
         final int tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());
-        if (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE
-            || tranType == MessageSysFlag.TRANSACTION_COMMIT_TYPE) {
+        if (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE || tranType == MessageSysFlag.TRANSACTION_COMMIT_TYPE) {
             // Delay Delivery
             if (msg.getDelayTimeLevel() > 0) {
                 if (msg.getDelayTimeLevel() > this.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel()) {
                     msg.setDelayTimeLevel(this.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel());
                 }
-
-                topic = TopicValidator.RMQ_SYS_SCHEDULE_TOPIC;
+                topic = TopicValidator.RMQ_SYS_SCHEDULE_TOPIC; // 将消息的Topic替换为SCHEDULE_TOPIC_XXXX
                 queueId = ScheduleMessageService.delayLevel2QueueId(msg.getDelayTimeLevel());
-
                 // Backup real topic, queueId
                 MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_TOPIC, msg.getTopic());
                 MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msg.getQueueId()));
                 msg.setPropertiesString(MessageDecoder.messageProperties2String(msg.getProperties()));
-
                 msg.setTopic(topic);
                 msg.setQueueId(queueId);
             }
         }
-
         InetSocketAddress bornSocketAddress = (InetSocketAddress) msg.getBornHost();
         if (bornSocketAddress.getAddress() instanceof Inet6Address) {
             msg.setBornHostV6Flag();
         }
-
         InetSocketAddress storeSocketAddress = (InetSocketAddress) msg.getStoreHost();
         if (storeSocketAddress.getAddress() instanceof Inet6Address) {
             msg.setStoreHostAddressV6Flag();
         }
-
         long elapsedTimeInLock = 0;
-
         MappedFile unlockMappedFile = null;
         //mappedFile 零拷贝实现
         MappedFile mappedFile = this.mappedFileQueue.getLastMappedFile();
@@ -834,10 +822,8 @@ public class CommitLog {
             long beginLockTimestamp = this.defaultMessageStore.getSystemClock().now();
             this.beginTimeInLock = beginLockTimestamp;
 
-            // Here settings are stored timestamp, in order to ensure an orderly
-            // global
+            // Here settings are stored timestamp, in order to ensure an orderly global
             msg.setStoreTimestamp(beginLockTimestamp);
-
             if (null == mappedFile || mappedFile.isFull()) {
                 mappedFile = this.mappedFileQueue.getLastMappedFile(0); // Mark: NewFile may be cause noise
             }
@@ -852,8 +838,7 @@ public class CommitLog {
             switch (result.getStatus()) {
                 case PUT_OK:
                     break;
-                //文件写满了，就创建一个新文件，重写消息
-                case END_OF_FILE:
+                case END_OF_FILE: //文件写满了，就创建一个新文件，重写消息
                     unlockMappedFile = mappedFile;
                     // Create a new file, re-write the message
                     mappedFile = this.mappedFileQueue.getLastMappedFile(0);
@@ -876,23 +861,18 @@ public class CommitLog {
                     beginTimeInLock = 0;
                     return new PutMessageResult(PutMessageStatus.UNKNOWN_ERROR, result);
             }
-
             elapsedTimeInLock = this.defaultMessageStore.getSystemClock().now() - beginLockTimestamp;
             beginTimeInLock = 0;
         } finally {
             putMessageLock.unlock();
         }
-
         if (elapsedTimeInLock > 500) {
             log.warn("[NOTIFYME]putMessage in lock cost time(ms)={}, bodyLength={} AppendMessageResult={}", elapsedTimeInLock, msg.getBody().length, result);
         }
-
         if (null != unlockMappedFile && this.defaultMessageStore.getMessageStoreConfig().isWarmMapedFileEnable()) {
             this.defaultMessageStore.unlockMappedFile(unlockMappedFile);
         }
-
         PutMessageResult putMessageResult = new PutMessageResult(PutMessageStatus.PUT_OK, result);
-
         // Statistics
         storeStatsService.getSinglePutMessageTopicTimesTotal(msg.getTopic()).incrementAndGet();
         storeStatsService.getSinglePutMessageTopicSizeTotal(topic).addAndGet(result.getWroteBytes());
@@ -900,7 +880,6 @@ public class CommitLog {
         handleDiskFlush(result, putMessageResult, msg);
         //主从同步
         handleHA(result, putMessageResult, msg);
-
         return putMessageResult;
     }
 
@@ -962,25 +941,19 @@ public class CommitLog {
                 service.putRequest(request);
                 CompletableFuture<PutMessageStatus> flushOkFuture = request.future();
                 PutMessageStatus flushStatus = null;
-                //同步等待文件刷新
-                try {
-                    flushStatus = flushOkFuture.get(this.defaultMessageStore.getMessageStoreConfig().getSyncFlushTimeout(),
-                            TimeUnit.MILLISECONDS);
+                try { //同步等待文件刷新
+                    flushStatus = flushOkFuture.get(this.defaultMessageStore.getMessageStoreConfig().getSyncFlushTimeout(), TimeUnit.MILLISECONDS);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     //flushOK=false;
                 }
                 if (flushStatus != PutMessageStatus.PUT_OK) {
-                    log.error("do groupcommit, wait for flush failed, topic: " + messageExt.getTopic() + " tags: " + messageExt.getTags()
-                        + " client address: " + messageExt.getBornHostString());
+                    log.error("do groupcommit, wait for flush failed, topic: " + messageExt.getTopic() + " tags: " + messageExt.getTags() + " client address: " + messageExt.getBornHostString());
                     putMessageResult.setPutMessageStatus(PutMessageStatus.FLUSH_DISK_TIMEOUT);
                 }
             } else {
                 service.wakeup();
             }
-        }
-        // Asynchronous flush 异步刷盘
-        //异步刷盘是把消息映射到MappedFile后，单独唤醒一个服务来进行刷盘
-        else {
+        } else { // Asynchronous flush 异步刷盘，异步刷盘是把消息映射到MappedFile后，单独唤醒一个服务来进行刷盘
             if (!this.defaultMessageStore.getMessageStoreConfig().isTransientStorePoolEnable()) {
                 flushCommitLogService.wakeup();
             } else {
@@ -988,7 +961,7 @@ public class CommitLog {
             }
         }
     }
-    //这个处理消息主从同步，会需要引入Raft协议。因为这个协议涉及到很多功能模块，会由诸葛老师后续进行讲解。
+    //这个处理消息主从同步，会需要引入Raft协议。因为这个协议涉及到很多功能模块
     public void handleHA(AppendMessageResult result, PutMessageResult putMessageResult, MessageExt messageExt) {
         if (BrokerRole.SYNC_MASTER == this.defaultMessageStore.getMessageStoreConfig().getBrokerRole()) {
             HAService service = this.defaultMessageStore.getHaService();
@@ -1000,8 +973,7 @@ public class CommitLog {
                     service.getWaitNotifyObject().wakeupAll();
                     PutMessageStatus replicaStatus = null;
                     try {
-                        replicaStatus = request.future().get(this.defaultMessageStore.getMessageStoreConfig().getSyncFlushTimeout(),
-                                TimeUnit.MILLISECONDS);
+                        replicaStatus = request.future().get(this.defaultMessageStore.getMessageStoreConfig().getSyncFlushTimeout(), TimeUnit.MILLISECONDS);
                     } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     }
                     if (replicaStatus != PutMessageStatus.PUT_OK) {
@@ -1017,7 +989,6 @@ public class CommitLog {
                 }
             }
         }
-
     }
 
     public PutMessageResult putMessages(final MessageExtBatch messageExtBatch) {
@@ -1253,18 +1224,14 @@ public class CommitLog {
             CommitLog.log.info(this.getServiceName() + " service started");
             while (!this.isStopped()) {
                 int interval = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getCommitIntervalCommitLog();
-
                 int commitDataLeastPages = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getCommitCommitLogLeastPages();
-
-                int commitDataThoroughInterval =
-                    CommitLog.this.defaultMessageStore.getMessageStoreConfig().getCommitCommitLogThoroughInterval();
+                int commitDataThoroughInterval = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getCommitCommitLogThoroughInterval();
 
                 long begin = System.currentTimeMillis();
                 if (begin >= (this.lastCommitTimestamp + commitDataThoroughInterval)) {
                     this.lastCommitTimestamp = begin;
                     commitDataLeastPages = 0;
                 }
-
                 try {
                     boolean result = CommitLog.this.mappedFileQueue.commit(commitDataLeastPages);
                     long end = System.currentTimeMillis();
@@ -1298,15 +1265,12 @@ public class CommitLog {
 
         public void run() {
             CommitLog.log.info(this.getServiceName() + " service started");
-
             while (!this.isStopped()) {
                 boolean flushCommitLogTimed = CommitLog.this.defaultMessageStore.getMessageStoreConfig().isFlushCommitLogTimed();
-
                 int interval = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getFlushIntervalCommitLog();
                 int flushPhysicQueueLeastPages = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getFlushCommitLogLeastPages();
 
-                int flushPhysicQueueThoroughInterval =
-                    CommitLog.this.defaultMessageStore.getMessageStoreConfig().getFlushCommitLogThoroughInterval();
+                int flushPhysicQueueThoroughInterval = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getFlushCommitLogThoroughInterval();
 
                 boolean printFlushProgress = false;
 
@@ -1433,20 +1397,16 @@ public class CommitLog {
                         boolean flushOK = false;
                         for (int i = 0; i < 2 && !flushOK; i++) {
                             flushOK = CommitLog.this.mappedFileQueue.getFlushedWhere() >= req.getNextOffset();
-
                             if (!flushOK) {
                                 CommitLog.this.mappedFileQueue.flush(0);
                             }
                         }
-
                         req.wakeupCustomer(flushOK ? PutMessageStatus.PUT_OK : PutMessageStatus.FLUSH_DISK_TIMEOUT);
                     }
-
                     long storeTimestamp = CommitLog.this.mappedFileQueue.getStoreTimestamp();
                     if (storeTimestamp > 0) {
                         CommitLog.this.defaultMessageStore.getStoreCheckpoint().setPhysicMsgTimestamp(storeTimestamp);
                     }
-
                     this.requestsRead.clear();
                 } else {
                     // Because of individual messages is set to not sync flush, it
@@ -1458,7 +1418,6 @@ public class CommitLog {
 
         public void run() {
             CommitLog.log.info(this.getServiceName() + " service started");
-
             while (!this.isStopped()) {
                 try {
                     this.waitForRunning(10);
@@ -1467,7 +1426,6 @@ public class CommitLog {
                     CommitLog.log.warn(this.getServiceName() + " service has exception. ", e);
                 }
             }
-
             // Under normal circumstances shutdown, wait for the arrival of the
             // request, and then flush
             try {
@@ -1475,13 +1433,10 @@ public class CommitLog {
             } catch (InterruptedException e) {
                 CommitLog.log.warn("GroupCommitService Exception, ", e);
             }
-
             synchronized (this) {
                 this.swapRequests();
             }
-
             this.doCommit();
-
             CommitLog.log.info(this.getServiceName() + " service end");
         }
 

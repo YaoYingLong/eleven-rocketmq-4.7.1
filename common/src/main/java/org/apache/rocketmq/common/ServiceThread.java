@@ -131,7 +131,6 @@ public abstract class ServiceThread implements Runnable {
             this.onWaitEnd();
             return;
         }
-
         //entry to wait
         waitPoint.reset();
 

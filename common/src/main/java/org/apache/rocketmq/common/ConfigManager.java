@@ -16,10 +16,11 @@
  */
 package org.apache.rocketmq.common;
 
-import java.io.IOException;
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
+
+import java.io.IOException;
 
 public abstract class ConfigManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
@@ -29,31 +30,30 @@ public abstract class ConfigManager {
     public boolean load() {
         String fileName = null;
         try {
-            fileName = this.configFilePath();
+            fileName = this.configFilePath(); // 获取配置文件broker.conf中配置的路径
             String jsonString = MixAll.file2String(fileName);
-
             if (null == jsonString || jsonString.length() == 0) {
-                return this.loadBak();
+                return this.loadBak(); // 若为空则加载.bak备份文件
             } else {
-                this.decode(jsonString);
+                this.decode(jsonString); // 加载数据到内存中
                 log.info("load " + fileName + " OK");
                 return true;
             }
         } catch (Exception e) {
             log.error("load " + fileName + " failed, and try to load backup file", e);
-            return this.loadBak();
+            return this.loadBak(); // 若异常则加载.bak备份文件
         }
     }
 
-    public abstract String configFilePath();
+    public abstract String configFilePath(); // 获取具体的配置的磁盘路径
 
-    private boolean loadBak() {
+    private boolean loadBak() { // 记载备份数据到内存中
         String fileName = null;
         try {
             fileName = this.configFilePath();
             String jsonString = MixAll.file2String(fileName + ".bak");
             if (jsonString != null && jsonString.length() > 0) {
-                this.decode(jsonString);
+                this.decode(jsonString);  // 加载数据到内存中
                 log.info("load " + fileName + " OK");
                 return true;
             }
@@ -67,7 +67,7 @@ public abstract class ConfigManager {
 
     public abstract void decode(final String jsonString);
 
-    public synchronized void persist() {
+    public synchronized void persist() { // 将数据持久化到磁盘
         String jsonString = this.encode(true);
         if (jsonString != null) {
             String fileName = this.configFilePath();

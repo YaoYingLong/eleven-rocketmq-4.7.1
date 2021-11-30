@@ -55,7 +55,6 @@ public class TopicConfig {
         sb.append(this.perm);
         sb.append(SEPARATOR);
         sb.append(this.topicFilterType);
-
         return sb.toString();
     }
 
@@ -63,18 +62,12 @@ public class TopicConfig {
         String[] strs = in.split(SEPARATOR);
         if (strs != null && strs.length == 5) {
             this.topicName = strs[0];
-
             this.readQueueNums = Integer.parseInt(strs[1]);
-
             this.writeQueueNums = Integer.parseInt(strs[2]);
-
             this.perm = Integer.parseInt(strs[3]);
-
             this.topicFilterType = TopicFilterType.valueOf(strs[4]);
-
             return true;
         }
-
         return false;
     }
 
