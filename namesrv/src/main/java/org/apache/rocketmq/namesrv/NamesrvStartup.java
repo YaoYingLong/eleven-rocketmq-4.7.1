@@ -138,7 +138,6 @@ public class NamesrvStartup {
     }
 
     public static NamesrvController start(final NamesrvController controller) throws Exception {
-
         if (null == controller) {
             throw new IllegalArgumentException("NamesrvController is null");
         }
@@ -158,7 +157,6 @@ public class NamesrvStartup {
         }));
         // 启动服务
         controller.start();
-
         return controller;
     }
 

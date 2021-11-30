@@ -64,7 +64,6 @@ public class FileWatchService extends ServiceThread {
     @Override
     public void run() {
         log.info(this.getServiceName() + " service started");
-
         while (!this.isStopped()) {
             try {
                 this.waitForRunning(WATCH_INTERVAL);
