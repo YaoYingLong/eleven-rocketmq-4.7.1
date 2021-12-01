@@ -109,7 +109,6 @@ public class RemotingServerTest {
     @Test
     public void testInvokeAsync() throws InterruptedException, RemotingConnectException,
         RemotingTimeoutException, RemotingTooMuchRequestException, RemotingSendRequestException {
-
         final CountDownLatch latch = new CountDownLatch(1);
         RemotingCommand request = RemotingCommand.createRequestCommand(0, null);
         request.setRemark("messi");

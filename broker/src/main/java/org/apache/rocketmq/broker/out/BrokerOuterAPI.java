@@ -147,14 +147,12 @@ public class BrokerOuterAPI {
                 brokerOuterExecutor.execute(new Runnable() {
                     @Override
                     public void run() {
-                        try {
-                            //K2 Broker真正执行注册的方法
+                        try {//K2 Broker真正执行注册的方法
                             RegisterBrokerResult result = registerBroker(namesrvAddr,oneway, timeoutMills,requestHeader,body);
                             //注册完了，在本地保存下来。
                             if (result != null) {
                                 registerBrokerResultList.add(result);
                             }
-
                             log.info("register broker[{}]to name server {} OK", brokerId, namesrvAddr);
                         } catch (Exception e) {
                             log.warn("registerBroker Exception, {}", namesrvAddr, e);
@@ -164,14 +162,11 @@ public class BrokerOuterAPI {
                     }
                 });
             }
-
-            try {
-                //在这里等待所有的NameSrv都注册完成了才往下走。
+            try {//在这里等待所有的NameSrv都注册完成了才往下走。
                 countDownLatch.await(timeoutMills, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
             }
         }
-
         return registerBrokerResultList;
     }
 

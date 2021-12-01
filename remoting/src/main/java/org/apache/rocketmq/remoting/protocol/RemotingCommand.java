@@ -241,9 +241,7 @@ public class RemotingCommand {
         } catch (IllegalAccessException e) {
             return null;
         }
-
         if (this.extFields != null) {
-
             Field[] fields = getClazzFields(classHeader);
             for (Field field : fields) {
                 if (!Modifier.isStatic(field.getModifiers())) {
@@ -257,11 +255,9 @@ public class RemotingCommand {
                                 }
                                 continue;
                             }
-
                             field.setAccessible(true);
                             String type = getCanonicalName(field.getType());
                             Object valueParsed;
-
                             if (type.equals(STRING_CANONICAL_NAME)) {
                                 valueParsed = value;
                             } else if (type.equals(INTEGER_CANONICAL_NAME_1) || type.equals(INTEGER_CANONICAL_NAME_2)) {
@@ -275,19 +271,15 @@ public class RemotingCommand {
                             } else {
                                 throw new RemotingCommandException("the custom field <" + fieldName + "> type is not supported");
                             }
-
                             field.set(objectHeader, valueParsed);
-
                         } catch (Throwable e) {
                             log.error("Failed field [{}] decoding", fieldName, e);
                         }
                     }
                 }
             }
-
             objectHeader.checkFields();
         }
-
         return objectHeader;
     }
 

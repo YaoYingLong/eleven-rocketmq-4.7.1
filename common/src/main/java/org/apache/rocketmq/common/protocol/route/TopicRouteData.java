@@ -37,19 +37,15 @@ public class TopicRouteData extends RemotingSerializable {
         topicRouteData.setBrokerDatas(new ArrayList<BrokerData>());
         topicRouteData.setFilterServerTable(new HashMap<String, List<String>>());
         topicRouteData.setOrderTopicConf(this.orderTopicConf);
-
         if (this.queueDatas != null) {
             topicRouteData.getQueueDatas().addAll(this.queueDatas);
         }
-
         if (this.brokerDatas != null) {
             topicRouteData.getBrokerDatas().addAll(this.brokerDatas);
         }
-
         if (this.filterServerTable != null) {
             topicRouteData.getFilterServerTable().putAll(this.filterServerTable);
         }
-
         return topicRouteData;
     }
 

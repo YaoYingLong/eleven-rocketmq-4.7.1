@@ -17,8 +17,7 @@
   -->
 
 <configuration>
-    <appender name="DefaultAppender"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="DefaultAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/logs/rocketmqlogs/broker_default.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
@@ -34,9 +33,7 @@
             <charset class="java.nio.charset.Charset">UTF-8</charset>
         </encoder>
     </appender>
-
-    <appender name="RocketmqBrokerAppender_inner"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="RocketmqBrokerAppender_inner" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/logs/rocketmqlogs/broker.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
@@ -77,8 +74,7 @@
         <appender-ref ref="RocketmqProtectionAppender_inner"/>
     </appender>
 
-    <appender name="RocketmqWaterMarkAppender_inner"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="RocketmqWaterMarkAppender_inner" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/logs/rocketmqlogs/watermark.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
@@ -119,8 +115,7 @@
         <appender-ref ref="RocketmqStoreAppender_inner"/>
     </appender>
 
-    <appender name="RocketmqRemotingAppender_inner"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="RocketmqRemotingAppender_inner" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/logs/rocketmqlogs/remoting.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
@@ -140,8 +135,7 @@
         <appender-ref ref="RocketmqRemotingAppender_inner"/>
     </appender>
 
-    <appender name="RocketmqStoreErrorAppender_inner"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="RocketmqStoreErrorAppender_inner" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/logs/rocketmqlogs/storeerror.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
@@ -162,8 +156,7 @@
     </appender>
 
 
-    <appender name="RocketmqTransactionAppender_inner"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="RocketmqTransactionAppender_inner" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/logs/rocketmqlogs/transaction.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
@@ -183,8 +176,7 @@
         <appender-ref ref="RocketmqTransactionAppender_inner"/>
     </appender>
 
-    <appender name="RocketmqRebalanceLockAppender_inner"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="RocketmqRebalanceLockAppender_inner" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/logs/rocketmqlogs/lock.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
@@ -204,8 +196,7 @@
         <appender-ref ref="RocketmqRebalanceLockAppender_inner"/>
     </appender>
 
-    <appender name="RocketmqFilterAppender_inner"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="RocketmqFilterAppender_inner" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/logs/rocketmqlogs/filter.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
@@ -225,8 +216,7 @@
         <appender-ref ref="RocketmqFilterAppender_inner"/>
     </appender>
 
-    <appender name="RocketmqStatsAppender"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="RocketmqStatsAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/logs/rocketmqlogs/stats.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
@@ -243,8 +233,7 @@
         </encoder>
     </appender>
 
-    <appender name="RocketmqCommercialAppender"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="RocketmqCommercialAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/logs/rocketmqlogs/commercial.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
@@ -260,78 +249,79 @@
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <append>true</append>
         <encoder>
-            <pattern>%d{yyy-MM-dd HH\:mm\:ss,GMT+8} %p %t - %m%n</pattern>
+            <pattern>%d{yyy-MM-dd HH\:mm\:ss,GMT+8} %class.%M %p %t  - %m%n</pattern>
             <charset class="java.nio.charset.Charset">UTF-8</charset>
         </encoder>
     </appender>
 
     <logger name="RocketmqBroker" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqBrokerAppender"/>
     </logger>
 
     <logger name="RocketmqProtection" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqProtectionAppender"/>
     </logger>
 
     <logger name="RocketmqWaterMark" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqWaterMarkAppender"/>
     </logger>
 
     <logger name="RocketmqCommon" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqBrokerAppender"/>
     </logger>
 
     <logger name="RocketmqStore" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqStoreAppender"/>
     </logger>
 
     <logger name="RocketmqStoreError" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqStoreErrorAppender"/>
     </logger>
 
     <logger name="RocketmqTransaction" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqTransactionAppender"/>
     </logger>
 
     <logger name="RocketmqRebalanceLock" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqRebalanceLockAppender"/>
     </logger>
 
     <logger name="RocketmqRemoting" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqRemotingAppender"/>
     </logger>
 
     <logger name="RocketmqStats" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqStatsAppender"/>
     </logger>
 
     <logger name="RocketmqCommercial" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqCommercialAppender"/>
     </logger>
 
     <logger name="RocketmqFilter" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="RocketmqFilterAppender"/>
     </logger>
 
     <logger name="RocketmqConsole" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="STDOUT"/>
     </logger>
 
     <root>
-        <level value="INFO"/>
+        <level value="DEBUG"/>
+        <appender-ref ref="STDOUT"/>
         <appender-ref ref="DefaultAppender"/>
     </root>
 </configuration>

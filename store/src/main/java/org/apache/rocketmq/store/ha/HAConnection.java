@@ -96,7 +96,6 @@ public class HAConnection {
         @Override
         public void run() {
             HAConnection.log.info(this.getServiceName() + " service started");
-
             while (!this.isStopped()) {
                 try {
                     this.selector.select(1000);
@@ -105,7 +104,6 @@ public class HAConnection {
                         HAConnection.log.error("processReadEvent error");
                         break;
                     }
-
                     long interval = HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now() - this.lastReadTimestamp;
                     if (interval > HAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig().getHaHousekeepingInterval()) {
                         log.warn("ha housekeeping, found this connection[" + HAConnection.this.clientAddr + "] expired, " + interval);
@@ -118,25 +116,19 @@ public class HAConnection {
             }
 
             this.makeStop();
-
             writeSocketService.makeStop();
-
             haService.removeConnection(HAConnection.this);
-
             HAConnection.this.haService.getConnectionCount().decrementAndGet();
-
             SelectionKey sk = this.socketChannel.keyFor(this.selector);
             if (sk != null) {
                 sk.cancel();
             }
-
             try {
                 this.selector.close();
                 this.socketChannel.close();
             } catch (IOException e) {
                 HAConnection.log.error("", e);
             }
-
             HAConnection.log.info(this.getServiceName() + " service end");
         }
 

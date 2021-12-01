@@ -72,7 +72,6 @@ public class MQFaultStrategy {
                             return mq;
                     }
                 }
-
                 final String notBestBroker = latencyFaultTolerance.pickOneAtLeast();
                 int writeQueueNums = tpInfo.getQueueIdByBroker(notBestBroker);
                 if (writeQueueNums > 0) {
@@ -89,10 +88,8 @@ public class MQFaultStrategy {
             } catch (Exception e) {
                 log.error("Error occurred when selecting message queue", e);
             }
-
             return tpInfo.selectOneMessageQueue();
         }
-
         return tpInfo.selectOneMessageQueue(lastBrokerName);
     }
 

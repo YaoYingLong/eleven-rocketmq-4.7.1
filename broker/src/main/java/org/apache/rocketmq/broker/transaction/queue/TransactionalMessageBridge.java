@@ -212,8 +212,7 @@ public class TransactionalMessageBridge {
     }
 
     public boolean putOpMessage(MessageExt messageExt, String opType) {
-        MessageQueue messageQueue = new MessageQueue(messageExt.getTopic(),
-            this.brokerController.getBrokerConfig().getBrokerName(), messageExt.getQueueId());
+        MessageQueue messageQueue = new MessageQueue(messageExt.getTopic(), this.brokerController.getBrokerConfig().getBrokerName(), messageExt.getQueueId());
         if (TransactionalMessageUtil.REMOVETAG.equals(opType)) {
             return addRemoveTagInTransactionOp(messageExt, messageQueue);
         }
@@ -227,12 +226,10 @@ public class TransactionalMessageBridge {
 
     public boolean putMessage(MessageExtBrokerInner messageInner) {
         PutMessageResult putMessageResult = store.putMessage(messageInner);
-        if (putMessageResult != null
-            && putMessageResult.getPutMessageStatus() == PutMessageStatus.PUT_OK) {
+        if (putMessageResult != null && putMessageResult.getPutMessageStatus() == PutMessageStatus.PUT_OK) {
             return true;
         } else {
-            LOGGER.error("Put message failed, topic: {}, queueId: {}, msgId: {}",
-                messageInner.getTopic(), messageInner.getQueueId(), messageInner.getMsgId());
+            LOGGER.error("Put message failed, topic: {}, queueId: {}, msgId: {}", messageInner.getTopic(), messageInner.getQueueId(), messageInner.getMsgId());
             return false;
         }
     }

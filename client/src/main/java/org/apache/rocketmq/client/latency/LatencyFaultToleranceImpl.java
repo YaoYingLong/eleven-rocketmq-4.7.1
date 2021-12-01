@@ -50,8 +50,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
 
     @Override
     public boolean isAvailable(final String name) {
-        //这个faultItemTable维护的是一个曾经发送失败的Broker列表
-        //在发送消息时如果发送失败，就会加入这个列表。
+        //这个faultItemTable维护的是一个曾经发送失败的Broker列表，在发送消息时如果发送失败，就会加入这个列表。
         final FaultItem faultItem = this.faultItemTable.get(name);
         if (faultItem != null) {
             return faultItem.isAvailable();
@@ -75,9 +74,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
 
         if (!tmpList.isEmpty()) {
             Collections.shuffle(tmpList);
-
             Collections.sort(tmpList);
-
             final int half = tmpList.size() / 2;
             if (half <= 0) {
                 return tmpList.get(0).getName();
@@ -86,7 +83,6 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
                 return tmpList.get(i).getName();
             }
         }
-
         return null;
     }
 
