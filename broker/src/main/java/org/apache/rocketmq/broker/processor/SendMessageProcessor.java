@@ -60,7 +60,6 @@ import org.apache.rocketmq.store.stats.BrokerStatsManager;
 public class SendMessageProcessor extends AbstractSendMessageProcessor implements NettyRequestProcessor {
 
     private List<ConsumeMessageHook> consumeMessageHookList;
-
     public SendMessageProcessor(final BrokerController brokerController) {
         super(brokerController);
     }

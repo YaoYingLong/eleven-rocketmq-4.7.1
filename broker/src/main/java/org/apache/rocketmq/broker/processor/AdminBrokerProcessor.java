@@ -249,30 +249,25 @@ public class AdminBrokerProcessor extends AsyncNettyRequestProcessor implements 
     private synchronized RemotingCommand updateAndCreateTopic(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
-        final CreateTopicRequestHeader requestHeader =
-            (CreateTopicRequestHeader) request.decodeCommandCustomHeader(CreateTopicRequestHeader.class);
+        final CreateTopicRequestHeader requestHeader = (CreateTopicRequestHeader) request.decodeCommandCustomHeader(CreateTopicRequestHeader.class);
         log.info("updateAndCreateTopic called by {}", RemotingHelper.parseChannelRemoteAddr(ctx.channel()));
 
         String topic = requestHeader.getTopic();
-
         if (!TopicValidator.validateTopic(topic, response)) {
             return response;
         }
         if (TopicValidator.isSystemTopic(topic, response)) {
             return response;
         }
-
         TopicConfig topicConfig = new TopicConfig(topic);
         topicConfig.setReadQueueNums(requestHeader.getReadQueueNums());
         topicConfig.setWriteQueueNums(requestHeader.getWriteQueueNums());
         topicConfig.setTopicFilterType(requestHeader.getTopicFilterTypeEnum());
         topicConfig.setPerm(requestHeader.getPerm());
         topicConfig.setTopicSysFlag(requestHeader.getTopicSysFlag() == null ? 0 : requestHeader.getTopicSysFlag());
-
         this.brokerController.getTopicConfigManager().updateTopicConfig(topicConfig);
 
         this.brokerController.registerIncrementBrokerData(topicConfig, this.brokerController.getTopicConfigManager().getDataVersion());
-
         response.setCode(ResponseCode.SUCCESS);
         return response;
     }

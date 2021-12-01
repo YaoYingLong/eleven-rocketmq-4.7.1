@@ -465,7 +465,6 @@ public class MQClientAPIImpl {
             }
         }
         request.setBody(msg.getBody());
-
         switch (communicationMode) {
             case ONEWAY:
                 this.remotingClient.invokeOneway(addr, request, timeoutMillis);
@@ -476,8 +475,7 @@ public class MQClientAPIImpl {
                 if (timeoutMillis < costTimeAsync) {
                     throw new RemotingTooMuchRequestException("sendMessage call timeout");
                 }
-                this.sendMessageAsync(addr, brokerName, msg, timeoutMillis - costTimeAsync, request, sendCallback, topicPublishInfo, instance,
-                    retryTimesWhenSendFailed, times, context, producer);
+                this.sendMessageAsync(addr, brokerName, msg, timeoutMillis - costTimeAsync, request, sendCallback, topicPublishInfo, instance, retryTimesWhenSendFailed, times, context, producer);
                 return null;
             case SYNC:
                 long costTimeSync = System.currentTimeMillis() - beginStartTime;
@@ -526,7 +524,6 @@ public class MQClientAPIImpl {
                 long cost = System.currentTimeMillis() - beginStartTime;
                 RemotingCommand response = responseFuture.getResponseCommand();
                 if (null == sendCallback && response != null) {
-
                     try {
                         SendResult sendResult = MQClientAPIImpl.this.processSendResponse(brokerName, msg, response);
                         if (context != null && sendResult != null) {
@@ -535,11 +532,9 @@ public class MQClientAPIImpl {
                         }
                     } catch (Throwable e) {
                     }
-
                     producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), false);
                     return;
                 }
-
                 if (response != null) {
                     try {
                         SendResult sendResult = MQClientAPIImpl.this.processSendResponse(brokerName, msg, response);
@@ -548,12 +543,10 @@ public class MQClientAPIImpl {
                             context.setSendResult(sendResult);
                             context.getProducer().executeSendMessageHookAfter(context);
                         }
-
                         try {
                             sendCallback.onSuccess(sendResult);
                         } catch (Throwable e) {
                         }
-
                         producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), false);
                     } catch (Exception e) {
                         producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), true);
@@ -564,17 +557,13 @@ public class MQClientAPIImpl {
                     producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), true);
                     if (!responseFuture.isSendRequestOK()) {
                         MQClientException ex = new MQClientException("send request failed", responseFuture.getCause());
-                        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance,
-                            retryTimesWhenSendFailed, times, ex, context, true, producer);
+                        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance, retryTimesWhenSendFailed, times, ex, context, true, producer);
                     } else if (responseFuture.isTimeout()) {
-                        MQClientException ex = new MQClientException("wait response timeout " + responseFuture.getTimeoutMillis() + "ms",
-                            responseFuture.getCause());
-                        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance,
-                            retryTimesWhenSendFailed, times, ex, context, true, producer);
+                        MQClientException ex = new MQClientException("wait response timeout " + responseFuture.getTimeoutMillis() + "ms", responseFuture.getCause());
+                        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance, retryTimesWhenSendFailed, times, ex, context, true, producer);
                     } else {
                         MQClientException ex = new MQClientException("unknow reseaon", responseFuture.getCause());
-                        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance,
-                            retryTimesWhenSendFailed, times, ex, context, true, producer);
+                        onExceptionImpl(brokerName, msg, timeoutMillis - cost, request, sendCallback, topicPublishInfo, instance, retryTimesWhenSendFailed, times, ex, context, true, producer);
                     }
                 }
             }
@@ -603,12 +592,10 @@ public class MQClientAPIImpl {
                 retryBrokerName = mqChosen.getBrokerName();
             }
             String addr = instance.findBrokerAddressInPublish(retryBrokerName);
-            log.info("async send msg by retry {} times. topic={}, brokerAddr={}, brokerName={}", tmp, msg.getTopic(), addr,
-                retryBrokerName);
+            log.info("async send msg by retry {} times. topic={}, brokerAddr={}, brokerName={}", tmp, msg.getTopic(), addr, retryBrokerName);
             try {
                 request.setOpaque(RemotingCommand.createNewRequestId());
-                sendMessageAsync(addr, retryBrokerName, msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance,
-                    timesTotal, curTimes, context, producer);
+                sendMessageAsync(addr, retryBrokerName, msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance, timesTotal, curTimes, context, producer);
             } catch (InterruptedException e1) {
                 onExceptionImpl(retryBrokerName, msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance, timesTotal, curTimes, e1,
                     context, false, producer);
@@ -625,12 +612,10 @@ public class MQClientAPIImpl {
                     context, true, producer);
             }
         } else {
-
             if (context != null) {
                 context.setException(e);
                 context.getProducer().executeSendMessageHookAfter(context);
             }
-
             try {
                 sendCallback.onException(e);
             } catch (Exception ignored) {
@@ -638,11 +623,7 @@ public class MQClientAPIImpl {
         }
     }
 
-    private SendResult processSendResponse(
-        final String brokerName,
-        final Message msg,
-        final RemotingCommand response
-    ) throws MQBrokerException, RemotingCommandException {
+    private SendResult processSendResponse(final String brokerName, final Message msg, final RemotingCommand response) throws MQBrokerException, RemotingCommandException {
         SendStatus sendStatus;
         switch (response.getCode()) {
             case ResponseCode.FLUSH_DISK_TIMEOUT: {
@@ -666,8 +647,7 @@ public class MQClientAPIImpl {
             }
         }
 
-        SendMessageResponseHeader responseHeader =
-                (SendMessageResponseHeader) response.decodeCommandCustomHeader(SendMessageResponseHeader.class);
+        SendMessageResponseHeader responseHeader = (SendMessageResponseHeader) response.decodeCommandCustomHeader(SendMessageResponseHeader.class);
 
         //If namespace not null , reset Topic without namespace.
         String topic = msg.getTopic();
@@ -685,9 +665,7 @@ public class MQClientAPIImpl {
             }
             uniqMsgId = sb.toString();
         }
-        SendResult sendResult = new SendResult(sendStatus,
-                uniqMsgId,
-                responseHeader.getMsgId(), messageQueue, responseHeader.getQueueOffset());
+        SendResult sendResult = new SendResult(sendStatus, uniqMsgId, responseHeader.getMsgId(), messageQueue, responseHeader.getQueueOffset());
         sendResult.setTransactionId(responseHeader.getTransactionId());
         String regionId = response.getExtFields().get(MessageConst.PROPERTY_MSG_REGION);
         String traceOn = response.getExtFields().get(MessageConst.PROPERTY_TRACE_SWITCH);

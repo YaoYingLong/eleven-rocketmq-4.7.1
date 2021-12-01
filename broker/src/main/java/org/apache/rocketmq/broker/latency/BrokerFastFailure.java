@@ -70,7 +70,6 @@ public class BrokerFastFailure {
                     if (null == runnable) {
                         break;
                     }
-
                     final RequestTask rt = castRunnable(runnable);
                     rt.returnResponse(RemotingSysResponseCode.SYSTEM_BUSY, String.format("[PCBUSY_CLEAN_QUEUE]broker busy, start flow control for a while, period in queue: %sms, size of queue: %d", System.currentTimeMillis() - rt.getCreateTimestamp(), this.brokerController.getSendThreadPoolQueue().size()));
                 } else {
