@@ -58,7 +58,7 @@ public class EndTransactionProcessor extends AsyncNettyRequestProcessor implemen
         if (BrokerRole.SLAVE == brokerController.getMessageStoreConfig().getBrokerRole()) {
             response.setCode(ResponseCode.SLAVE_NOT_AVAILABLE);
             LOGGER.warn("Message store is slave mode, so end transaction is forbidden. ");
-            return response;
+            return response; // 若当前节点是从节点
         }
         if (requestHeader.getFromTransactionCheck()) {
             switch (requestHeader.getCommitOrRollback()) {
@@ -101,7 +101,7 @@ public class EndTransactionProcessor extends AsyncNettyRequestProcessor implemen
         }
         OperationResult result = new OperationResult();
         if (MessageSysFlag.TRANSACTION_COMMIT_TYPE == requestHeader.getCommitOrRollback()) {
-            result = this.brokerController.getTransactionalMessageService().commitMessage(requestHeader);
+            result = this.brokerController.getTransactionalMessageService().commitMessage(requestHeader); // 将消息从RMQ_SYS_TRANS_HALF_TOPIC队列中查询出
             if (result.getResponseCode() == ResponseCode.SUCCESS) {
                 RemotingCommand res = checkPrepareMessage(result.getPrepareMessage(), requestHeader);
                 if (res.getCode() == ResponseCode.SUCCESS) {
@@ -110,9 +110,9 @@ public class EndTransactionProcessor extends AsyncNettyRequestProcessor implemen
                     msgInner.setQueueOffset(requestHeader.getTranStateTableOffset());
                     msgInner.setPreparedTransactionOffset(requestHeader.getCommitLogOffset());
                     msgInner.setStoreTimestamp(result.getPrepareMessage().getStoreTimestamp());
-                    MessageAccessor.clearProperty(msgInner, MessageConst.PROPERTY_TRANSACTION_PREPARED);
-                    RemotingCommand sendResult = sendFinalMessage(msgInner);
-                    if (sendResult.getCode() == ResponseCode.SUCCESS) {
+                    MessageAccessor.clearProperty(msgInner, MessageConst.PROPERTY_TRANSACTION_PREPARED); // 将事务消息TRAN_MSG标记移除
+                    RemotingCommand sendResult = sendFinalMessage(msgInner); // 将从RMQ_SYS_TRANS_HALF_TOPIC队列中查询的消息真正存储到其真实的Topic队列中
+                    if (sendResult.getCode() == ResponseCode.SUCCESS) { // 存储成功则在RMQ_SYS_TRANS_OP_HALF_TOPIC队列中添加对应的消息
                         this.brokerController.getTransactionalMessageService().deletePrepareMessage(result.getPrepareMessage());
                     }
                     return sendResult;
@@ -123,7 +123,7 @@ public class EndTransactionProcessor extends AsyncNettyRequestProcessor implemen
             result = this.brokerController.getTransactionalMessageService().rollbackMessage(requestHeader);
             if (result.getResponseCode() == ResponseCode.SUCCESS) {
                 RemotingCommand res = checkPrepareMessage(result.getPrepareMessage(), requestHeader);
-                if (res.getCode() == ResponseCode.SUCCESS) {
+                if (res.getCode() == ResponseCode.SUCCESS) { // 成功则在RMQ_SYS_TRANS_OP_HALF_TOPIC队列中添加对应的消息
                     this.brokerController.getTransactionalMessageService().deletePrepareMessage(result.getPrepareMessage());
                 }
                 return res;

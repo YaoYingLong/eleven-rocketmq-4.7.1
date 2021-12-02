@@ -854,7 +854,7 @@ public class BrokerController {
             this.filterServerManager.start();
         }
         if (!messageStoreConfig.isEnableDLegerCommitLog()) {
-            startProcessorByHa(messageStoreConfig.getBrokerRole());
+            startProcessorByHa(messageStoreConfig.getBrokerRole()); // 开始事务消息检查
             handleSlaveSynchronize(messageStoreConfig.getBrokerRole());
             this.registerBrokerAll(true, false, true);
         }
