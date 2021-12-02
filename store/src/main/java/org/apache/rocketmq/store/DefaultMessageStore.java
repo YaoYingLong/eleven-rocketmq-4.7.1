@@ -404,12 +404,10 @@ public class DefaultMessageStore implements MessageStore {
                 log.warn("putMessage not in lock elapsed time(ms)={}, bodyLength={}", elapsedTime, msg.getBody().length);
             }
             this.storeStatsService.setPutMessageEntireTimeMax(elapsedTime);
-
             if (null == result || !result.isOk()) {
                 this.storeStatsService.getPutMessageFailedTimes().incrementAndGet();
             }
         });
-
         return putResultFuture;
     }
 

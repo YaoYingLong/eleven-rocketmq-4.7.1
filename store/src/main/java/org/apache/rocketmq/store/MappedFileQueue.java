@@ -190,24 +190,18 @@ public class MappedFileQueue {
     public MappedFile getLastMappedFile(final long startOffset, boolean needCreate) {
         long createOffset = -1;
         MappedFile mappedFileLast = getLastMappedFile();
-
         if (mappedFileLast == null) {
             createOffset = startOffset - (startOffset % this.mappedFileSize);
         }
-
         if (mappedFileLast != null && mappedFileLast.isFull()) {
             createOffset = mappedFileLast.getFileFromOffset() + this.mappedFileSize;
         }
-
         if (createOffset != -1 && needCreate) {
             String nextFilePath = this.storePath + File.separator + UtilAll.offset2FileName(createOffset);
-            String nextNextFilePath = this.storePath + File.separator
-                    + UtilAll.offset2FileName(createOffset + this.mappedFileSize);
+            String nextNextFilePath = this.storePath + File.separator + UtilAll.offset2FileName(createOffset + this.mappedFileSize);
             MappedFile mappedFile = null;
-
             if (this.allocateMappedFileService != null) {
-                mappedFile = this.allocateMappedFileService.putRequestAndReturnMappedFile(nextFilePath,
-                        nextNextFilePath, this.mappedFileSize);
+                mappedFile = this.allocateMappedFileService.putRequestAndReturnMappedFile(nextFilePath, nextNextFilePath, this.mappedFileSize);
             } else {
                 try {
                     mappedFile = new MappedFile(nextFilePath, this.mappedFileSize);
@@ -215,17 +209,14 @@ public class MappedFileQueue {
                     log.error("create mappedFile exception", e);
                 }
             }
-
             if (mappedFile != null) {
                 if (this.mappedFiles.isEmpty()) {
                     mappedFile.setFirstCreateInQueue(true);
                 }
                 this.mappedFiles.add(mappedFile);
             }
-
             return mappedFile;
         }
-
         return mappedFileLast;
     }
 
@@ -429,7 +420,6 @@ public class MappedFileQueue {
                 this.storeTimestamp = tmpTimeStamp;
             }
         }
-
         return result;
     }
 
@@ -459,12 +449,8 @@ public class MappedFileQueue {
             MappedFile lastMappedFile = this.getLastMappedFile();
             if (firstMappedFile != null && lastMappedFile != null) {
                 if (offset < firstMappedFile.getFileFromOffset() || offset >= lastMappedFile.getFileFromOffset() + this.mappedFileSize) {
-                    LOG_ERROR.warn("Offset not matched. Request offset: {}, firstOffset: {}, lastOffset: {}, mappedFileSize: {}, mappedFiles count: {}",
-                            offset,
-                            firstMappedFile.getFileFromOffset(),
-                            lastMappedFile.getFileFromOffset() + this.mappedFileSize,
-                            this.mappedFileSize,
-                            this.mappedFiles.size());
+                    LOG_ERROR.warn("Offset not matched. Request offset: {}, firstOffset: {}, lastOffset: {}, mappedFileSize: {}, mappedFiles count: {}", offset,
+                            firstMappedFile.getFileFromOffset(), lastMappedFile.getFileFromOffset() + this.mappedFileSize, this.mappedFileSize, this.mappedFiles.size());
                 } else {
                     int index = (int) ((offset / this.mappedFileSize) - (firstMappedFile.getFileFromOffset() / this.mappedFileSize));
                     MappedFile targetFile = null;
@@ -472,20 +458,16 @@ public class MappedFileQueue {
                         targetFile = this.mappedFiles.get(index);
                     } catch (Exception ignored) {
                     }
-
                     if (targetFile != null && offset >= targetFile.getFileFromOffset()
                             && offset < targetFile.getFileFromOffset() + this.mappedFileSize) {
                         return targetFile;
                     }
-
                     for (MappedFile tmpMappedFile : this.mappedFiles) {
-                        if (offset >= tmpMappedFile.getFileFromOffset()
-                                && offset < tmpMappedFile.getFileFromOffset() + this.mappedFileSize) {
+                        if (offset >= tmpMappedFile.getFileFromOffset() && offset < tmpMappedFile.getFileFromOffset() + this.mappedFileSize) {
                             return tmpMappedFile;
                         }
                     }
                 }
-
                 if (returnFirstOnNotFound) {
                     return firstMappedFile;
                 }
@@ -493,7 +475,6 @@ public class MappedFileQueue {
         } catch (Exception e) {
             log.error("findMappedFileByOffset Exception", e);
         }
-
         return null;
     }
 

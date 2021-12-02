@@ -881,14 +881,12 @@ public class CommitLog {
         return putMessageResult;
     }
 
-    public CompletableFuture<PutMessageStatus> submitFlushRequest(AppendMessageResult result, PutMessageResult putMessageResult,
-                                                                  MessageExt messageExt) {
+    public CompletableFuture<PutMessageStatus> submitFlushRequest(AppendMessageResult result, PutMessageResult putMessageResult, MessageExt messageExt) {
         // Synchronization flush
         if (FlushDiskType.SYNC_FLUSH == this.defaultMessageStore.getMessageStoreConfig().getFlushDiskType()) {
             final GroupCommitService service = (GroupCommitService) this.flushCommitLogService;
             if (messageExt.isWaitStoreMsgOK()) {
-                GroupCommitRequest request = new GroupCommitRequest(result.getWroteOffset() + result.getWroteBytes(),
-                        this.defaultMessageStore.getMessageStoreConfig().getSyncFlushTimeout());
+                GroupCommitRequest request = new GroupCommitRequest(result.getWroteOffset() + result.getWroteBytes(), this.defaultMessageStore.getMessageStoreConfig().getSyncFlushTimeout());
                 service.putRequest(request);
                 return request.future();
             } else {
@@ -930,11 +928,9 @@ public class CommitLog {
 
     //K2 处理数据刷盘
     public void handleDiskFlush(AppendMessageResult result, PutMessageResult putMessageResult, MessageExt messageExt) {
-        // Synchronization flush 同步刷盘
-        if (FlushDiskType.SYNC_FLUSH == this.defaultMessageStore.getMessageStoreConfig().getFlushDiskType()) {
+        if (FlushDiskType.SYNC_FLUSH == this.defaultMessageStore.getMessageStoreConfig().getFlushDiskType()) { // Synchronization flush 同步刷盘
             final GroupCommitService service = (GroupCommitService) this.flushCommitLogService;
-            if (messageExt.isWaitStoreMsgOK()) {
-                //构建一个GroupCommitRequest，交给GroupCommitService处理。
+            if (messageExt.isWaitStoreMsgOK()) {//构建一个GroupCommitRequest，交给GroupCommitService处理。
                 GroupCommitRequest request = new GroupCommitRequest(result.getWroteOffset() + result.getWroteBytes());
                 service.putRequest(request);
                 CompletableFuture<PutMessageStatus> flushOkFuture = request.future();
@@ -1395,7 +1391,7 @@ public class CommitLog {
                         boolean flushOK = false;
                         for (int i = 0; i < 2 && !flushOK; i++) {
                             flushOK = CommitLog.this.mappedFileQueue.getFlushedWhere() >= req.getNextOffset();
-                            if (!flushOK) {
+                            if (!flushOK) { // 当前索引位置小于请求数据的位置执行刷盘
                                 CommitLog.this.mappedFileQueue.flush(0);
                             }
                         }
@@ -1479,11 +1475,8 @@ public class CommitLog {
             return msgStoreItemMemory;
         }
         //K2 实际写入CommitLog的方法。
-        public AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer, final int maxBlank,
-            final MessageExtBrokerInner msgInner) {
-            // STORETIMESTAMP + STOREHOSTADDRESS + OFFSET <br>
-
-            // PHY OFFSET
+        public AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer, final int maxBlank, final MessageExtBrokerInner msgInner) {
+            // STORETIMESTAMP + STOREHOSTADDRESS + OFFSET <br> PHY OFFSET
             long wroteOffset = fileFromOffset + byteBuffer.position();
 
             int sysflag = msgInner.getSysFlag();
@@ -1531,8 +1524,7 @@ public class CommitLog {
             /**
              * Serialize message
              */
-            final byte[] propertiesData =
-                msgInner.getPropertiesString() == null ? null : msgInner.getPropertiesString().getBytes(MessageDecoder.CHARSET_UTF8);
+            final byte[] propertiesData = msgInner.getPropertiesString() == null ? null : msgInner.getPropertiesString().getBytes(MessageDecoder.CHARSET_UTF8);
 
             final int propertiesLength = propertiesData == null ? 0 : propertiesData.length;
 
@@ -1550,11 +1542,9 @@ public class CommitLog {
 
             // Exceeds the maximum message
             if (msgLen > this.maxMessageSize) {
-                CommitLog.log.warn("message size exceeded, msg total size: " + msgLen + ", msg body size: " + bodyLength
-                    + ", maxMessageSize: " + this.maxMessageSize);
+                CommitLog.log.warn("message size exceeded, msg total size: " + msgLen + ", msg body size: " + bodyLength + ", maxMessageSize: " + this.maxMessageSize);
                 return new AppendMessageResult(AppendMessageStatus.MESSAGE_SIZE_EXCEEDED);
             }
-
             // Determines whether there is sufficient free space
             if ((msgLen + END_FILE_MIN_BLANK_LENGTH) > maxBlank) {
                 this.resetByteBuffer(this.msgStoreItemMemory, maxBlank);
@@ -1636,13 +1626,10 @@ public class CommitLog {
             return result;
         }
 
-        public AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer, final int maxBlank,
-            final MessageExtBatch messageExtBatch) {
+        public AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer, final int maxBlank, final MessageExtBatch messageExtBatch) {
             byteBuffer.mark();
-            //physical offset
-            long wroteOffset = fileFromOffset + byteBuffer.position();
-            // Record ConsumeQueue information
-            keyBuilder.setLength(0);
+            long wroteOffset = fileFromOffset + byteBuffer.position(); //physical offset
+            keyBuilder.setLength(0); // Record ConsumeQueue information
             keyBuilder.append(messageExtBatch.getTopic());
             keyBuilder.append('-');
             keyBuilder.append(messageExtBatch.getQueueId());
@@ -1658,47 +1645,33 @@ public class CommitLog {
             msgIdBuilder.setLength(0);
             final long beginTimeMills = CommitLog.this.defaultMessageStore.now();
             ByteBuffer messagesByteBuff = messageExtBatch.getEncodedBuff();
-
             int sysFlag = messageExtBatch.getSysFlag();
             int storeHostLength = (sysFlag & MessageSysFlag.STOREHOSTADDRESS_V6_FLAG) == 0 ? 4 + 4 : 16 + 4;
             ByteBuffer storeHostHolder = ByteBuffer.allocate(storeHostLength);
-
             this.resetByteBuffer(storeHostHolder, storeHostLength);
             ByteBuffer storeHostBytes = messageExtBatch.getStoreHostBytes(storeHostHolder);
             messagesByteBuff.mark();
             while (messagesByteBuff.hasRemaining()) {
-                // 1 TOTALSIZE
-                final int msgPos = messagesByteBuff.position();
+                final int msgPos = messagesByteBuff.position(); // 1 TOTALSIZE
                 final int msgLen = messagesByteBuff.getInt();
                 final int bodyLen = msgLen - 40; //only for log, just estimate it
-                // Exceeds the maximum message
-                if (msgLen > this.maxMessageSize) {
-                    CommitLog.log.warn("message size exceeded, msg total size: " + msgLen + ", msg body size: " + bodyLen
-                        + ", maxMessageSize: " + this.maxMessageSize);
+                if (msgLen > this.maxMessageSize) { // Exceeds the maximum message
+                    CommitLog.log.warn("message size exceeded, msg total size: " + msgLen + ", msg body size: " + bodyLen + ", maxMessageSize: " + this.maxMessageSize);
                     return new AppendMessageResult(AppendMessageStatus.MESSAGE_SIZE_EXCEEDED);
                 }
                 totalMsgLen += msgLen;
-                // Determines whether there is sufficient free space
-                if ((totalMsgLen + END_FILE_MIN_BLANK_LENGTH) > maxBlank) {
+                if ((totalMsgLen + END_FILE_MIN_BLANK_LENGTH) > maxBlank) { // Determines whether there is sufficient free space
                     this.resetByteBuffer(this.msgStoreItemMemory, 8);
-                    // 1 TOTALSIZE
-                    this.msgStoreItemMemory.putInt(maxBlank);
-                    // 2 MAGICCODE
-                    this.msgStoreItemMemory.putInt(CommitLog.BLANK_MAGIC_CODE);
-                    // 3 The remaining space may be any value
-                    //ignore previous read
-                    messagesByteBuff.reset();
-                    // Here the length of the specially set maxBlank
-                    byteBuffer.reset(); //ignore the previous appended messages
+                    this.msgStoreItemMemory.putInt(maxBlank); // 1 TOTALSIZE
+                    this.msgStoreItemMemory.putInt(CommitLog.BLANK_MAGIC_CODE); // 2 MAGICCODE
+                    messagesByteBuff.reset(); // 3 The remaining space may be any value ignore previous read
+                    byteBuffer.reset(); //Here the length of the specially set maxBlank ignore the previous appended messages
                     byteBuffer.put(this.msgStoreItemMemory.array(), 0, 8);
-                    return new AppendMessageResult(AppendMessageStatus.END_OF_FILE, wroteOffset, maxBlank, msgIdBuilder.toString(), messageExtBatch.getStoreTimestamp(),
-                        beginQueueOffset, CommitLog.this.defaultMessageStore.now() - beginTimeMills);
+                    return new AppendMessageResult(AppendMessageStatus.END_OF_FILE, wroteOffset, maxBlank, msgIdBuilder.toString(), messageExtBatch.getStoreTimestamp(), beginQueueOffset, CommitLog.this.defaultMessageStore.now() - beginTimeMills);
                 }
-                //move to add queue offset and commitlog offset
-                messagesByteBuff.position(msgPos + 20);
+                messagesByteBuff.position(msgPos + 20); //move to add queue offset and commitlog offset
                 messagesByteBuff.putLong(queueOffset);
                 messagesByteBuff.putLong(wroteOffset + totalMsgLen - msgLen);
-
                 storeHostBytes.rewind();
                 String msgId;
                 if ((sysFlag & MessageSysFlag.STOREHOSTADDRESS_V6_FLAG) == 0) {
@@ -1706,7 +1679,6 @@ public class CommitLog {
                 } else {
                     msgId = MessageDecoder.createMessageId(this.msgIdV6Memory, storeHostBytes, wroteOffset + totalMsgLen - msgLen);
                 }
-
                 if (msgIdBuilder.length() > 0) {
                     msgIdBuilder.append(',').append(msgId);
                 } else {
@@ -1716,16 +1688,13 @@ public class CommitLog {
                 msgNum++;
                 messagesByteBuff.position(msgPos + msgLen);
             }
-
             messagesByteBuff.position(0);
             messagesByteBuff.limit(totalMsgLen);
             byteBuffer.put(messagesByteBuff);
             messageExtBatch.setEncodedBuff(null);
-            AppendMessageResult result = new AppendMessageResult(AppendMessageStatus.PUT_OK, wroteOffset, totalMsgLen, msgIdBuilder.toString(),
-                messageExtBatch.getStoreTimestamp(), beginQueueOffset, CommitLog.this.defaultMessageStore.now() - beginTimeMills);
+            AppendMessageResult result = new AppendMessageResult(AppendMessageStatus.PUT_OK, wroteOffset, totalMsgLen, msgIdBuilder.toString(), messageExtBatch.getStoreTimestamp(), beginQueueOffset, CommitLog.this.defaultMessageStore.now() - beginTimeMills);
             result.setMsgNum(msgNum);
             CommitLog.this.topicQueueTable.put(key, queueOffset);
-
             return result;
         }
 

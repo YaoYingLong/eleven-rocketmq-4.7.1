@@ -158,8 +158,7 @@ public class MappedFile extends ReferenceResource {
     }
     //两种init方法，如果打开了对外内存，会把数据先写入对外内存，然后commit后，再写入硬盘
     //是否开启对外内存的判断见： MessageStoreConfig.isTransientStorePoolEnable 配置参数transientStorePoolEnable，并且开启异步刷盘
-    public void init(final String fileName, final int fileSize,
-        final TransientStorePool transientStorePool) throws IOException {
+    public void init(final String fileName, final int fileSize, final TransientStorePool transientStorePool) throws IOException {
         init(fileName, fileSize);
         this.writeBuffer = transientStorePool.borrowBuffer();
         this.transientStorePool = transientStorePool;
@@ -355,15 +354,12 @@ public class MappedFile extends ReferenceResource {
     private boolean isAbleToFlush(final int flushLeastPages) {
         int flush = this.flushedPosition.get();
         int write = getReadPosition();
-
         if (this.isFull()) {
             return true;
         }
-
         if (flushLeastPages > 0) {
             return ((write / OS_PAGE_SIZE) - (flush / OS_PAGE_SIZE)) >= flushLeastPages;
         }
-
         return write > flush;
     }
 
@@ -512,7 +508,6 @@ public class MappedFile extends ReferenceResource {
                     mappedByteBuffer.force();
                 }
             }
-
             // prevent gc
             if (j % 1000 == 0) {
                 log.info("j={}, costTime={}", j, System.currentTimeMillis() - time);
@@ -524,16 +519,12 @@ public class MappedFile extends ReferenceResource {
                 }
             }
         }
-
         // force flush when prepare load finished
         if (type == FlushDiskType.SYNC_FLUSH) {
-            log.info("mapped file warm-up done, force to disk, mappedFile={}, costTime={}",
-                this.getFileName(), System.currentTimeMillis() - beginTime);
+            log.info("mapped file warm-up done, force to disk, mappedFile={}, costTime={}", this.getFileName(), System.currentTimeMillis() - beginTime);
             mappedByteBuffer.force();
         }
-        log.info("mapped file warm-up done. mappedFile={}, costTime={}", this.getFileName(),
-            System.currentTimeMillis() - beginTime);
-
+        log.info("mapped file warm-up done. mappedFile={}, costTime={}", this.getFileName(), System.currentTimeMillis() - beginTime);
         this.mlock();
     }
 

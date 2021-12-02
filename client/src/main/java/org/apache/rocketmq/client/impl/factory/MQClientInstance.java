@@ -170,7 +170,6 @@ public class MQClientInstance {
                     info.getMessageQueueList().add(mq);
                 }
             }
-
             info.setOrderTopic(true);
         } else {
             List<QueueData> qds = route.getQueueDatas();
@@ -184,25 +183,20 @@ public class MQClientInstance {
                             break;
                         }
                     }
-
                     if (null == brokerData) {
                         continue;
                     }
-
                     if (!brokerData.getBrokerAddrs().containsKey(MixAll.MASTER_ID)) {
                         continue;
                     }
-
                     for (int i = 0; i < qd.getWriteQueueNums(); i++) {
                         MessageQueue mq = new MessageQueue(topic, qd.getBrokerName(), i);
                         info.getMessageQueueList().add(mq);
                     }
                 }
             }
-
             info.setOrderTopic(false);
         }
-
         return info;
     }
 
@@ -1005,7 +999,6 @@ public class MQClientInstance {
         if (map != null && !map.isEmpty()) {
             return map.get(MixAll.MASTER_ID);
         }
-
         return null;
     }
 
