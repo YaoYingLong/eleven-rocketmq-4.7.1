@@ -249,13 +249,11 @@ public abstract class AbstractSendMessageProcessor extends AsyncNettyRequestProc
         }
     }
 
-    public void executeSendMessageHookBefore(final ChannelHandlerContext ctx, final RemotingCommand request,
-        SendMessageContext context) {
+    public void executeSendMessageHookBefore(final ChannelHandlerContext ctx, final RemotingCommand request, SendMessageContext context) {
         if (hasSendMessageHook()) {
             for (SendMessageHook hook : this.sendMessageHookList) {
                 try {
                     final SendMessageRequestHeader requestHeader = parseRequestHeader(request);
-
                     String namespace = NamespaceUtil.getNamespaceFromResource(requestHeader.getTopic());
                     if (null != requestHeader) {
                         context.setNamespace(namespace);
@@ -267,7 +265,6 @@ public abstract class AbstractSendMessageProcessor extends AsyncNettyRequestProc
                         context.setBrokerAddr(this.brokerController.getBrokerAddr());
                         context.setQueueId(requestHeader.getQueueId());
                     }
-
                     hook.sendMessageBefore(context);
                     if (requestHeader != null) {
                         requestHeader.setProperties(context.getMsgProps());
@@ -279,17 +276,13 @@ public abstract class AbstractSendMessageProcessor extends AsyncNettyRequestProc
         }
     }
 
-    protected SendMessageRequestHeader parseRequestHeader(RemotingCommand request)
-        throws RemotingCommandException {
-
+    protected SendMessageRequestHeader parseRequestHeader(RemotingCommand request) throws RemotingCommandException {
         SendMessageRequestHeaderV2 requestHeaderV2 = null;
         SendMessageRequestHeader requestHeader = null;
         switch (request.getCode()) {
             case RequestCode.SEND_BATCH_MESSAGE:
             case RequestCode.SEND_MESSAGE_V2:
-                requestHeaderV2 =
-                    (SendMessageRequestHeaderV2) request
-                        .decodeCommandCustomHeader(SendMessageRequestHeaderV2.class);
+                requestHeaderV2 = (SendMessageRequestHeaderV2) request.decodeCommandCustomHeader(SendMessageRequestHeaderV2.class);
             case RequestCode.SEND_MESSAGE:
                 if (null == requestHeaderV2) {
                     requestHeader = (SendMessageRequestHeader) request.decodeCommandCustomHeader(SendMessageRequestHeader.class);

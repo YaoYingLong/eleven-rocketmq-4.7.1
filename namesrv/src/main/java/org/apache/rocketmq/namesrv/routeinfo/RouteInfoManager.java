@@ -99,29 +99,19 @@ public class RouteInfoManager {
         return topicList.encode();
     }
     //注册Broker
-    public RegisterBrokerResult registerBroker(
-        final String clusterName,
-        final String brokerAddr,
-        final String brokerName,
-        final long brokerId,
-        final String haServerAddr,
-        final TopicConfigSerializeWrapper topicConfigWrapper,
-        final List<String> filterServerList,
-        final Channel channel) {
+    public RegisterBrokerResult registerBroker(final String clusterName, final String brokerAddr, final String brokerName, final long brokerId,
+        final String haServerAddr, final TopicConfigSerializeWrapper topicConfigWrapper, final List<String> filterServerList, final Channel channel) {
         RegisterBrokerResult result = new RegisterBrokerResult();
         try {
             try {
-                //并发加锁，同一时间只能一个线程写。
-                this.lock.writeLock().lockInterruptibly();
-                //Broker列表，用的一个set，自动去重。
+                this.lock.writeLock().lockInterruptibly();//并发加锁，同一时间只能一个线程写。
+                // Broker列表，用的一个set，自动去重。
                 Set<String> brokerNames = this.clusterAddrTable.get(clusterName);
                 if (null == brokerNames) {
                     brokerNames = new HashSet<String>();
                     this.clusterAddrTable.put(clusterName, brokerNames);
                 }
-
                 brokerNames.add(brokerName);
-
                 boolean registerFirst = false;
                 //根据Broker名称获取数据。这个brokerAddrTable就是核心路由数据表
                 BrokerData brokerData = this.brokerAddrTable.get(brokerName);
@@ -142,16 +132,12 @@ public class RouteInfoManager {
                         it.remove();
                     }
                 }
-
                 String oldAddr = brokerData.getBrokerAddrs().put(brokerId, brokerAddr);
                 registerFirst = registerFirst || (null == oldAddr);
 
-                if (null != topicConfigWrapper
-                    && MixAll.MASTER_ID == brokerId) {
-                    if (this.isBrokerTopicConfigChanged(brokerAddr, topicConfigWrapper.getDataVersion())
-                        || registerFirst) {
-                        ConcurrentMap<String, TopicConfig> tcTable =
-                            topicConfigWrapper.getTopicConfigTable();
+                if (null != topicConfigWrapper && MixAll.MASTER_ID == brokerId) {
+                    if (this.isBrokerTopicConfigChanged(brokerAddr, topicConfigWrapper.getDataVersion()) || registerFirst) {
+                        ConcurrentMap<String, TopicConfig> tcTable = topicConfigWrapper.getTopicConfigTable();
                         if (tcTable != null) {
                             for (Map.Entry<String, TopicConfig> entry : tcTable.entrySet()) {
                                 this.createAndUpdateQueueData(brokerName, entry.getValue());
@@ -162,15 +148,10 @@ public class RouteInfoManager {
                 //每隔30秒心跳注册时，会封装一个新的BrokerLiveInfo。这样就会覆盖上一次的数据。
                 //同时，这个BrokerLiveInfo里会保存一个当前时间戳，代表最近一次心跳时间。
                 BrokerLiveInfo prevBrokerLiveInfo = this.brokerLiveTable.put(brokerAddr,
-                    new BrokerLiveInfo(
-                        System.currentTimeMillis(),
-                        topicConfigWrapper.getDataVersion(),
-                        channel,
-                        haServerAddr));
+                    new BrokerLiveInfo(System.currentTimeMillis(), topicConfigWrapper.getDataVersion(), channel, haServerAddr));
                 if (null == prevBrokerLiveInfo) {
                     log.info("new broker registered, {} HAServer: {}", brokerAddr, haServerAddr);
                 }
-
                 if (filterServerList != null) {
                     if (filterServerList.isEmpty()) {
                         this.filterServerTable.remove(brokerAddr);
@@ -195,7 +176,6 @@ public class RouteInfoManager {
         } catch (Exception e) {
             log.error("registerBroker Exception", e);
         }
-
         return result;
     }
 
@@ -235,7 +215,6 @@ public class RouteInfoManager {
             log.info("new topic registered, {} {}", topicConfig.getTopicName(), queueData);
         } else {
             boolean addNewOne = true;
-
             Iterator<QueueData> it = queueDataList.iterator();
             while (it.hasNext()) {
                 QueueData qd = it.next();
@@ -249,7 +228,6 @@ public class RouteInfoManager {
                     }
                 }
             }
-
             if (addNewOne) {
                 queueDataList.add(queueData);
             }
@@ -427,14 +405,14 @@ public class RouteInfoManager {
 
         return null;
     }
-    //K2 扫描不活动的Broker
+    //K2 扫描不活动的Broker，超过120s未接收到心跳则移除，该工作每10s执行一次
     public void scanNotActiveBroker() {
-        //扫描的就是这个BrokerLiveTable,路由信息表。还有一个Brokernames
+        // 扫描的就是这个BrokerLiveTable,路由信息表。还有一个Brokernames
         Iterator<Entry<String, BrokerLiveInfo>> it = this.brokerLiveTable.entrySet().iterator();
         while (it.hasNext()) {
             Entry<String, BrokerLiveInfo> next = it.next();
             long last = next.getValue().getLastUpdateTimestamp();
-            //根据心跳时间判断是否存活的核心逻辑。
+            // 根据心跳时间判断是否存活的核心逻辑。
             if ((last + BROKER_CHANNEL_EXPIRED_TIME) < System.currentTimeMillis()) {
                 RemotingUtil.closeChannel(next.getValue().getChannel());
                 it.remove();

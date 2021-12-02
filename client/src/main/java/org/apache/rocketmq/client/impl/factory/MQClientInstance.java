@@ -844,13 +844,11 @@ public class MQClientInstance {
         if (null == group || null == consumer) {
             return false;
         }
-
         MQConsumerInner prev = this.consumerTable.putIfAbsent(group, consumer);
         if (prev != null) {
             log.warn("the consumer group[" + group + "] exist already.");
             return false;
         }
-
         return true;
     }
 

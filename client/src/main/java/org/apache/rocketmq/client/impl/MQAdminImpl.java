@@ -329,9 +329,7 @@ public class MQAdminImpl {
                                                 case ResponseCode.SUCCESS: {
                                                     QueryMessageResponseHeader responseHeader = null;
                                                     try {
-                                                        responseHeader =
-                                                            (QueryMessageResponseHeader) response
-                                                                .decodeCommandCustomHeader(QueryMessageResponseHeader.class);
+                                                        responseHeader = (QueryMessageResponseHeader) response.decodeCommandCustomHeader(QueryMessageResponseHeader.class);
                                                     } catch (RemotingCommandException e) {
                                                         log.error("decodeCommandCustomHeader exception", e);
                                                         return;
