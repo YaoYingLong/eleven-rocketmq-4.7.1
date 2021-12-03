@@ -133,7 +133,6 @@ public abstract class ServiceThread implements Runnable {
         }
         //entry to wait
         waitPoint.reset();
-
         try {
             waitPoint.await(interval, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {

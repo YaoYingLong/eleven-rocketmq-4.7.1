@@ -487,14 +487,12 @@ public class PullMessageProcessor extends AsyncNettyRequestProcessor implements 
         }
     }
 
-    public void executeRequestWhenWakeup(final Channel channel,
-        final RemotingCommand request) throws RemotingCommandException {
+    public void executeRequestWhenWakeup(final Channel channel, final RemotingCommand request) throws RemotingCommandException {
         Runnable run = new Runnable() {
             @Override
             public void run() {
                 try {
                     final RemotingCommand response = PullMessageProcessor.this.processRequest(channel, request, false);
-
                     if (response != null) {
                         response.setOpaque(request.getOpaque());
                         response.markResponseType();

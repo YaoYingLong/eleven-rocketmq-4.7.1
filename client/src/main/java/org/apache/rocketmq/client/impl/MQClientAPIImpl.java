@@ -1009,26 +1009,16 @@ public class MQClientAPIImpl {
         return response.getCode() == ResponseCode.SUCCESS;
     }
 
-    public void consumerSendMessageBack(
-        final String addr,
-        final MessageExt msg,
-        final String consumerGroup,
-        final int delayLevel,
-        final long timeoutMillis,
-        final int maxConsumeRetryTimes
-    ) throws RemotingException, MQBrokerException, InterruptedException {
+    public void consumerSendMessageBack(final String addr, final MessageExt msg, final String consumerGroup, final int delayLevel, final long timeoutMillis, final int maxConsumeRetryTimes) throws RemotingException, MQBrokerException, InterruptedException {
         ConsumerSendMsgBackRequestHeader requestHeader = new ConsumerSendMsgBackRequestHeader();
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.CONSUMER_SEND_MSG_BACK, requestHeader);
-
         requestHeader.setGroup(consumerGroup);
         requestHeader.setOriginTopic(msg.getTopic());
         requestHeader.setOffset(msg.getCommitLogOffset());
         requestHeader.setDelayLevel(delayLevel);
         requestHeader.setOriginMsgId(msg.getMsgId());
         requestHeader.setMaxReconsumeTimes(maxConsumeRetryTimes);
-
-        RemotingCommand response = this.remotingClient.invokeSync(MixAll.brokerVIPChannel(this.clientConfig.isVipChannelEnabled(), addr),
-            request, timeoutMillis);
+        RemotingCommand response = this.remotingClient.invokeSync(MixAll.brokerVIPChannel(this.clientConfig.isVipChannelEnabled(), addr), request, timeoutMillis);
         assert response != null;
         switch (response.getCode()) {
             case ResponseCode.SUCCESS: {
@@ -1037,7 +1027,6 @@ public class MQClientAPIImpl {
             default:
                 break;
         }
-
         throw new MQBrokerException(response.getCode(), response.getRemark());
     }
 

@@ -36,7 +36,6 @@ public class ManyPullRequest {
             this.pullRequestList.clear();
             return result;
         }
-
         return null;
     }
 }

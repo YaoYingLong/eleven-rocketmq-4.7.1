@@ -294,7 +294,6 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
 
     public boolean sendMessageBack(final MessageExt msg, final ConsumeConcurrentlyContext context) {
         int delayLevel = context.getDelayLevelWhenNextConsume();
-
         // Wrap topic with namespace before sending back message.
         msg.setTopic(this.defaultMQPushConsumer.withNamespace(msg.getTopic()));
         try {

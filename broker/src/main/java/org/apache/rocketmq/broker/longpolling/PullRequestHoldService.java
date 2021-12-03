@@ -34,8 +34,7 @@ public class PullRequestHoldService extends ServiceThread {
     private static final String TOPIC_QUEUEID_SEPARATOR = "@";
     private final BrokerController brokerController;
     private final SystemClock systemClock = new SystemClock();
-    private ConcurrentMap<String/* topic@queueId */, ManyPullRequest> pullRequestTable =
-        new ConcurrentHashMap<String, ManyPullRequest>(1024);
+    private ConcurrentMap<String/* topic@queueId */, ManyPullRequest> pullRequestTable = new ConcurrentHashMap<String, ManyPullRequest>(1024);
 
     public PullRequestHoldService(final BrokerController brokerController) {
         this.brokerController = brokerController;
@@ -62,20 +61,17 @@ public class PullRequestHoldService extends ServiceThread {
         sb.append(queueId);
         return sb.toString();
     }
-    //处理ManyPullRequest线程
+
     @Override
-    public void run() {
+    public void run() { // 处理ManyPullRequest线程
         log.info("{} service started", this.getServiceName());
         while (!this.isStopped()) {
-            try {
-                //如果开启了长轮询，等待5秒后再去查
+            try {// 如果开启了长轮询，等待5秒后再去查
                 if (this.brokerController.getBrokerConfig().isLongPollingEnable()) {
                     this.waitForRunning(5 * 1000);
-                } else {
-                    //没有开启长轮询，等待1秒后再去查。
+                } else {//没有开启长轮询，等待1秒后再去查。
                     this.waitForRunning(this.brokerController.getBrokerConfig().getShortPollingTimeMills());
                 }
-
                 long beginLockTimestamp = this.systemClock.now();
                 //检查请求对象
                 this.checkHoldRequest();
@@ -87,7 +83,6 @@ public class PullRequestHoldService extends ServiceThread {
                 log.warn(this.getServiceName() + " service has exception. ", e);
             }
         }
-
         log.info("{} service end", this.getServiceName());
     }
 
@@ -104,8 +99,7 @@ public class PullRequestHoldService extends ServiceThread {
                 int queueId = Integer.parseInt(kArray[1]);
                 //从CommitLog中检查是否有新的消息。
                 final long offset = this.brokerController.getMessageStore().getMaxOffsetInQueue(topic, queueId);
-                try {
-                    //通知消息到达
+                try {//通知消息到达
                     this.notifyMessageArriving(topic, queueId, offset);
                 } catch (Throwable e) {
                     log.error("check hold request failed. topic={}, queueId={}", topic, queueId, e);
@@ -118,15 +112,13 @@ public class PullRequestHoldService extends ServiceThread {
         notifyMessageArriving(topic, queueId, maxOffset, null, 0, null, null);
     }
     //CommitLog消息到达通知
-    public void notifyMessageArriving(final String topic, final int queueId, final long maxOffset, final Long tagsCode,
-        long msgStoreTime, byte[] filterBitMap, Map<String, String> properties) {
+    public void notifyMessageArriving(final String topic, final int queueId, final long maxOffset, final Long tagsCode, long msgStoreTime, byte[] filterBitMap, Map<String, String> properties) {
         String key = this.buildKey(topic, queueId);
         ManyPullRequest mpr = this.pullRequestTable.get(key);
         if (mpr != null) {
             List<PullRequest> requestList = mpr.cloneListAndClear();
             if (requestList != null) {
                 List<PullRequest> replayList = new ArrayList<PullRequest>();
-
                 for (PullRequest request : requestList) {
                     long newestOffset = maxOffset;
                     if (newestOffset <= request.getPullFromThisOffset()) {
@@ -135,17 +127,14 @@ public class PullRequestHoldService extends ServiceThread {
                     //判断是否有新的消息
                     if (newestOffset > request.getPullFromThisOffset()) {
                         //检查新的消息是否是ConsumeQueue感兴趣的消息
-                        boolean match = request.getMessageFilter().isMatchedByConsumeQueue(tagsCode,
-                            new ConsumeQueueExt.CqExtUnit(tagsCode, msgStoreTime, filterBitMap));
+                        boolean match = request.getMessageFilter().isMatchedByConsumeQueue(tagsCode, new ConsumeQueueExt.CqExtUnit(tagsCode, msgStoreTime, filterBitMap));
                         // match by bit map, need eval again when properties is not null.
                         if (match && properties != null) {
                             match = request.getMessageFilter().isMatchedByCommitLog(null, properties);
                         }
-                        //如果是感兴趣的消息，就等待线程唤醒后执行消息推送。
-                        if (match) {
+                        if (match) { //如果是感兴趣的消息，就等待线程唤醒后执行消息推送。
                             try {
-                                this.brokerController.getPullMessageProcessor().executeRequestWhenWakeup(request.getClientChannel(),
-                                    request.getRequestCommand());
+                                this.brokerController.getPullMessageProcessor().executeRequestWhenWakeup(request.getClientChannel(), request.getRequestCommand());
                             } catch (Throwable e) {
                                 log.error("execute request when wakeup failed.", e);
                             }
@@ -155,17 +144,14 @@ public class PullRequestHoldService extends ServiceThread {
                     //请求超时后也给客户端响应。
                     if (System.currentTimeMillis() >= (request.getSuspendTimestamp() + request.getTimeoutMillis())) {
                         try {
-                            this.brokerController.getPullMessageProcessor().executeRequestWhenWakeup(request.getClientChannel(),
-                                request.getRequestCommand());
+                            this.brokerController.getPullMessageProcessor().executeRequestWhenWakeup(request.getClientChannel(), request.getRequestCommand());
                         } catch (Throwable e) {
                             log.error("execute request when wakeup failed.", e);
                         }
                         continue;
                     }
-
                     replayList.add(request);
                 }
-
                 if (!replayList.isEmpty()) {
                     mpr.addPullRequest(replayList);
                 }

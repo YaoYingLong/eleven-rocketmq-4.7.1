@@ -378,10 +378,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
 
     private void makeSureStateOK() throws MQClientException {
         if (this.serviceState != ServiceState.RUNNING) {
-            throw new MQClientException("The consumer service state not OK, "
-                    + this.serviceState
-                    + FAQUrl.suggestTodo(FAQUrl.CLIENT_SERVICE_NOT_OK),
-                    null);
+            throw new MQClientException("The consumer service state not OK, " + this.serviceState + FAQUrl.suggestTodo(FAQUrl.CLIENT_SERVICE_NOT_OK), null);
         }
     }
 
@@ -415,13 +412,11 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
         this.mQClientFactory.getPullMessageService().executeTaskLater(r, timeDelay);
     }
 
-    public QueryResult queryMessage(String topic, String key, int maxNum, long begin, long end)
-            throws MQClientException, InterruptedException {
+    public QueryResult queryMessage(String topic, String key, int maxNum, long begin, long end) throws MQClientException, InterruptedException {
         return this.mQClientFactory.getMQAdminImpl().queryMessage(topic, key, maxNum, begin, end);
     }
 
-    public MessageExt queryMessageByUniqKey(String topic, String uniqKey) throws MQClientException,
-            InterruptedException {
+    public MessageExt queryMessageByUniqKey(String topic, String uniqKey) throws MQClientException, InterruptedException {
         return this.mQClientFactory.getMQAdminImpl().queryMessageByUniqKey(topic, uniqKey);
     }
 
@@ -435,13 +430,10 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
         log.info("resume this consumer, {}", this.defaultMQPushConsumer.getConsumerGroup());
     }
 
-    public void sendMessageBack(MessageExt msg, int delayLevel, final String brokerName)
-            throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
+    public void sendMessageBack(MessageExt msg, int delayLevel, final String brokerName) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         try {
-            String brokerAddr = (null != brokerName) ? this.mQClientFactory.findBrokerAddressInPublish(brokerName)
-                    : RemotingHelper.parseSocketAddressAddr(msg.getStoreHost());
-            this.mQClientFactory.getMQClientAPIImpl().consumerSendMessageBack(brokerAddr, msg,
-                    this.defaultMQPushConsumer.getConsumerGroup(), delayLevel, 5000, getMaxReconsumeTimes());
+            String brokerAddr = (null != brokerName) ? this.mQClientFactory.findBrokerAddressInPublish(brokerName) : RemotingHelper.parseSocketAddressAddr(msg.getStoreHost());
+            this.mQClientFactory.getMQClientAPIImpl().consumerSendMessageBack(brokerAddr, msg, this.defaultMQPushConsumer.getConsumerGroup(), delayLevel, 5000, getMaxReconsumeTimes());
         } catch (Exception e) {
             log.error("sendMessageBack Exception, " + this.defaultMQPushConsumer.getConsumerGroup(), e);
 
