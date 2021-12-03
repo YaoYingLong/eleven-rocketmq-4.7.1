@@ -50,8 +50,7 @@ public class IndexService {
         this.defaultMessageStore = store;
         this.hashSlotNum = store.getMessageStoreConfig().getMaxHashSlotNum();
         this.indexNum = store.getMessageStoreConfig().getMaxIndexNum();
-        this.storePath =
-            StorePathConfigHelper.getStorePathIndex(store.getMessageStoreConfig().getStorePathRootDir());
+        this.storePath = StorePathConfigHelper.getStorePathIndex(store.getMessageStoreConfig().getStorePathRootDir());
     }
 
     public boolean load(final boolean lastExitOK) {
@@ -152,7 +151,6 @@ public class IndexService {
 
     public QueryOffsetResult queryOffset(String topic, String key, int maxNum, long begin, long end) {
         List<Long> phyOffsets = new ArrayList<Long>(maxNum);
-
         long indexLastUpdateTimestamp = 0;
         long indexLastUpdatePhyoffset = 0;
         maxNum = Math.min(maxNum, this.defaultMessageStore.getMessageStoreConfig().getMaxMsgsNumBatch());
@@ -195,17 +193,15 @@ public class IndexService {
     }
 
     public void buildIndex(DispatchRequest req) {
-        IndexFile indexFile = retryGetAndCreateIndexFile();
+        IndexFile indexFile = retryGetAndCreateIndexFile(); // 获取或创建IndexFile，文件名称为时间戳
         if (indexFile != null) {
             long endPhyOffset = indexFile.getEndPhyOffset();
             DispatchRequest msg = req;
             String topic = msg.getTopic();
             String keys = msg.getKeys();
-            //重复消息直接返回
-            if (msg.getCommitLogOffset() < endPhyOffset) {
+            if (msg.getCommitLogOffset() < endPhyOffset) { //重复消息直接返回
                 return;
             }
-
             final int tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());
             switch (tranType) {
                 case MessageSysFlag.TRANSACTION_NOT_TYPE:
@@ -213,18 +209,17 @@ public class IndexService {
                 case MessageSysFlag.TRANSACTION_COMMIT_TYPE:
                     break;
                 case MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:
-                    return;
+                    return; // 回退消息直接返回
             }
             //K2 indexFile索引文件构建的核心步骤
-            if (req.getUniqKey() != null) {
+            if (req.getUniqKey() != null) { // 若存在唯一键
                 indexFile = putKey(indexFile, msg, buildKey(topic, req.getUniqKey()));
                 if (indexFile == null) {
                     log.error("putKey error commitlog {} uniqkey {}", req.getCommitLogOffset(), req.getUniqKey());
                     return;
                 }
             }
-
-            if (keys != null && keys.length() > 0) {
+            if (keys != null && keys.length() > 0) {  // 若存在过滤的keys
                 String[] keyset = keys.split(MessageConst.KEY_SEPARATOR);
                 for (int i = 0; i < keyset.length; i++) {
                     String key = keyset[i];
@@ -245,15 +240,12 @@ public class IndexService {
     private IndexFile putKey(IndexFile indexFile, DispatchRequest msg, String idxKey) {
         for (boolean ok = indexFile.putKey(idxKey, msg.getCommitLogOffset(), msg.getStoreTimestamp()); !ok; ) {
             log.warn("Index file [" + indexFile.getFileName() + "] is full, trying to create another one");
-
             indexFile = retryGetAndCreateIndexFile();
             if (null == indexFile) {
                 return null;
             }
-
             ok = indexFile.putKey(idxKey, msg.getCommitLogOffset(), msg.getStoreTimestamp());
         }
-
         return indexFile;
     }
 
@@ -299,12 +291,10 @@ public class IndexService {
                     prevIndexFile = tmp;
                 }
             }
-
             this.readWriteLock.readLock().unlock();
         }
-
         if (indexFile == null) {
-            try {
+            try { // 按照时间生成Index文件名称
                 String fileName = this.storePath + File.separator + UtilAll.timeMillisToHumanString(System.currentTimeMillis());
                 indexFile = new IndexFile(fileName, this.hashSlotNum, this.indexNum, lastUpdateEndPhyOffset, lastUpdateIndexTimestamp);
                 this.readWriteLock.writeLock().lock();
@@ -314,7 +304,7 @@ public class IndexService {
             } finally {
                 this.readWriteLock.writeLock().unlock();
             }
-            if (indexFile != null) {
+            if (indexFile != null) { // 开启线程将之前的IndexFile缓存中的数据刷到磁盘中
                 final IndexFile flushThisFile = prevIndexFile;
                 Thread flushThread = new Thread(new Runnable() {
                     @Override

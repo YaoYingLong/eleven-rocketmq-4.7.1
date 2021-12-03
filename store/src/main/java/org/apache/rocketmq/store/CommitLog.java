@@ -1122,7 +1122,6 @@ public class CommitLog {
                 return this.rollNextFile(mappedFile.getFileFromOffset());
             }
         }
-
         return -1;
     }
 

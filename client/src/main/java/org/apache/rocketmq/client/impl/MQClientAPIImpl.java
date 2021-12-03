@@ -647,13 +647,7 @@ public class MQClientAPIImpl {
         return sendResult;
     }
 
-    public PullResult pullMessage(
-        final String addr,
-        final PullMessageRequestHeader requestHeader,
-        final long timeoutMillis,
-        final CommunicationMode communicationMode,
-        final PullCallback pullCallback
-    ) throws RemotingException, MQBrokerException, InterruptedException {
+    public PullResult pullMessage(final String addr, final PullMessageRequestHeader requestHeader, final long timeoutMillis, final CommunicationMode communicationMode, final PullCallback pullCallback) throws RemotingException, MQBrokerException, InterruptedException {
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.PULL_MESSAGE, requestHeader);
         //几种拉取方式
         switch (communicationMode) {
@@ -673,20 +667,12 @@ public class MQClientAPIImpl {
         return null;
     }
     //异步拉取消息
-    private void pullMessageAsync(
-        final String addr,
-        final RemotingCommand request,
-        final long timeoutMillis,
-        final PullCallback pullCallback
-    ) throws RemotingException, InterruptedException {
-        //异步拉取
-        this.remotingClient.invokeAsync(addr, request, timeoutMillis, new InvokeCallback() {
+    private void pullMessageAsync(final String addr, final RemotingCommand request, final long timeoutMillis, final PullCallback pullCallback) throws RemotingException, InterruptedException {
+        this.remotingClient.invokeAsync(addr, request, timeoutMillis, new InvokeCallback() {  //异步拉取
             @Override
             public void operationComplete(ResponseFuture responseFuture) {
-                //处理拉取消息的结果
-                RemotingCommand response = responseFuture.getResponseCommand();
-                //有响应
-                if (response != null) {
+                RemotingCommand response = responseFuture.getResponseCommand(); //处理拉取消息的结果
+                if (response != null) { //有响应
                     try {
                         PullResult pullResult = MQClientAPIImpl.this.processPullResponse(response);
                         assert pullResult != null;
@@ -694,13 +680,11 @@ public class MQClientAPIImpl {
                     } catch (Exception e) {
                         pullCallback.onException(e);
                     }
-                } else {
-                    //没响应
+                } else {//没响应
                     if (!responseFuture.isSendRequestOK()) {
                         pullCallback.onException(new MQClientException("send request failed to " + addr + ". Request: " + request, responseFuture.getCause()));
                     } else if (responseFuture.isTimeout()) {
-                        pullCallback.onException(new MQClientException("wait response from " + addr + " timeout :" + responseFuture.getTimeoutMillis() + "ms" + ". Request: " + request,
-                            responseFuture.getCause()));
+                        pullCallback.onException(new MQClientException("wait response from " + addr + " timeout :" + responseFuture.getTimeoutMillis() + "ms" + ". Request: " + request, responseFuture.getCause()));
                     } else {
                         pullCallback.onException(new MQClientException("unknown reason. addr: " + addr + ", timeoutMillis: " + timeoutMillis + ". Request: " + request, responseFuture.getCause()));
                     }
@@ -709,11 +693,7 @@ public class MQClientAPIImpl {
         });
     }
     //同步拉取消息
-    private PullResult pullMessageSync(
-        final String addr,
-        final RemotingCommand request,
-        final long timeoutMillis
-    ) throws RemotingException, InterruptedException, MQBrokerException {
+    private PullResult pullMessageSync(final String addr, final RemotingCommand request, final long timeoutMillis) throws RemotingException, InterruptedException, MQBrokerException {
         RemotingCommand response = this.remotingClient.invokeSync(addr, request, timeoutMillis);
         assert response != null;
         return this.processPullResponse(response);

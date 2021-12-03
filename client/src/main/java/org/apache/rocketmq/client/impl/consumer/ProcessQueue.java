@@ -314,7 +314,6 @@ public class ProcessQueue {
                         }
                     }
                 }
-
                 if (result.isEmpty()) {
                     consuming = false;
                 }
@@ -324,7 +323,6 @@ public class ProcessQueue {
         } catch (InterruptedException e) {
             log.error("take Messages exception", e);
         }
-
         return result;
     }
 

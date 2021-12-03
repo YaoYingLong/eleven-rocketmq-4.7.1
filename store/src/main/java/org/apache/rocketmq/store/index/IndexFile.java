@@ -93,10 +93,8 @@ public class IndexFile {
             int keyHash = indexKeyHashMethod(key);
             int slotPos = keyHash % this.hashSlotNum;
             int absSlotPos = IndexHeader.INDEX_HEADER_SIZE + slotPos * hashSlotSize;
-
             FileLock fileLock = null;
-            try {
-                // fileLock = this.fileChannel.lock(absSlotPos, hashSlotSize, false);
+            try {// fileLock = this.fileChannel.lock(absSlotPos, hashSlotSize, false);
                 int slotValue = this.mappedByteBuffer.getInt(absSlotPos);
                 if (slotValue <= invalidIndex || slotValue > this.indexHeader.getIndexCount()) {
                     slotValue = invalidIndex;

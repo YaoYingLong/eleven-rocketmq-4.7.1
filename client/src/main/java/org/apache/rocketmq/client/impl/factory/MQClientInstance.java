@@ -941,7 +941,7 @@ public class MQClientInstance {
         this.rebalanceService.wakeup();
     }
     //K2 客户端负载均衡 针对当前消费者所属的每一个消费者组
-    public void doRebalance() {
+    public void doRebalance() { // 客户端负载均衡 针对当前消费者所属的每一个消费者组
         for (Map.Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
             MQConsumerInner impl = entry.getValue();
             if (impl != null) {
