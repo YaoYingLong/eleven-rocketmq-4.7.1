@@ -108,7 +108,7 @@ public class ScheduleMessageService extends ConfigManager {
         return storeTimestamp + 1000;
     }
     //K2 延迟消息服务的启动方法
-    public void start() {
+    public void start() { // 延迟消息服务的启动方法
         if (started.compareAndSet(false, true)) {
             this.timer = new Timer("ScheduleMessageTimerThread", true);
             for (Map.Entry<Integer, Long> entry : this.delayLevelTable.entrySet()) {
@@ -118,15 +118,12 @@ public class ScheduleMessageService extends ConfigManager {
                 if (null == offset) {
                     offset = 0L;
                 }
-
                 if (timeDelay != null) {//定时执行延迟消息处理任务
                     this.timer.schedule(new DeliverDelayedMessageTimerTask(level, offset), FIRST_DELAY_TIME);
                 }
             }
-            //每隔10秒，将延迟消息持久化到硬盘中。
-            this.timer.scheduleAtFixedRate(new TimerTask() {
-                @Override
-                public void run() {
+            this.timer.scheduleAtFixedRate(new TimerTask() { //每隔10秒，将延迟消息持久化到硬盘中。
+                @Override public void run() {
                     try {
                         if (started.get()) ScheduleMessageService.this.persist();
                     } catch (Throwable e) {
@@ -281,12 +278,9 @@ public class ScheduleMessageService extends ConfigManager {
                                     tagsCode = computeDeliverTimestamp(delayLevel, msgStoreTime);
                                 }
                             }
-
                             long now = System.currentTimeMillis();
                             long deliverTimestamp = this.correctDeliverTimestamp(now, tagsCode);
-
                             nextOffset = offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);
-
                             long countdown = deliverTimestamp - now;
                             //把每个延迟消息封装成一个MessageExt
                             if (countdown <= 0) {
