@@ -215,18 +215,14 @@ public class Configuration {
     public String getAllConfigsFormatString() {
         try {
             readWriteLock.readLock().lockInterruptibly();
-
             try {
-
                 return getAllConfigsInternal();
-
             } finally {
                 readWriteLock.readLock().unlock();
             }
         } catch (InterruptedException e) {
             log.error("getAllConfigsFormatString lock error");
         }
-
         return null;
     }
 
@@ -254,7 +250,6 @@ public class Configuration {
 
     private String getAllConfigsInternal() {
         StringBuilder stringBuilder = new StringBuilder();
-
         // reload from config object ?
         for (Object configObject : this.configObjectList) {
             Properties properties = MixAll.object2Properties(configObject);
@@ -264,11 +259,9 @@ public class Configuration {
                 log.warn("getAllConfigsInternal object2Properties is null, {}", configObject.getClass());
             }
         }
-
         {
             stringBuilder.append(MixAll.properties2String(this.allConfigs));
         }
-
         return stringBuilder.toString();
     }
 

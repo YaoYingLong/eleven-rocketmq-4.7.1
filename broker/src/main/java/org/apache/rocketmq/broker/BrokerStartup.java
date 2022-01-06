@@ -59,11 +59,9 @@ public class BrokerStartup {
     }
 
     public static BrokerController start(BrokerController controller) {
-        try {
-            //K1 Controller启动
+        try {// K1 Controller启动
             controller.start();
-            String tip = "The broker[" + controller.getBrokerConfig().getBrokerName() + ", "
-                    + controller.getBrokerAddr() + "] boot success. serializeType=" + RemotingCommand.getSerializeTypeConfigInThisServer();
+            String tip = "The broker[" + controller.getBrokerConfig().getBrokerName() + ", " + controller.getBrokerAddr() + "] boot success. serializeType=" + RemotingCommand.getSerializeTypeConfigInThisServer();
             if (null != controller.getBrokerConfig().getNamesrvAddr()) {
                 tip += " and name server is " + controller.getBrokerConfig().getNamesrvAddr();
             }
@@ -201,11 +199,7 @@ public class BrokerStartup {
             MixAll.printObjectProperties(log, nettyClientConfig);
             MixAll.printObjectProperties(log, messageStoreConfig);
             //创建BrokerController
-            final BrokerController controller = new BrokerController(
-                    brokerConfig,
-                    nettyServerConfig,
-                    nettyClientConfig,
-                    messageStoreConfig);
+            final BrokerController controller = new BrokerController(brokerConfig, nettyServerConfig, nettyClientConfig, messageStoreConfig);
             // remember all configs to prevent discard
             controller.getConfiguration().registerConfig(properties); // 存储所有配置防止丢失
             //初始化 注意从中理清楚Broker的组件结构

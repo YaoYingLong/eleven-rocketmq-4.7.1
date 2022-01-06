@@ -178,6 +178,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 nettyServerConfig.getServerWorkerThreads(),
                 new ThreadFactory() {
                     private AtomicInteger threadIndex = new AtomicInteger(0);
+
                     @Override
                     public Thread newThread(Runnable r) {
                         return new Thread(r, "NettyServerCodecThread_" + this.threadIndex.incrementAndGet());
@@ -195,18 +196,17 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                         .childOption(ChannelOption.SO_SNDBUF, nettyServerConfig.getServerSocketSndBufSize())
                         .childOption(ChannelOption.SO_RCVBUF, nettyServerConfig.getServerSocketRcvBufSize())
                         .localAddress(new InetSocketAddress(this.nettyServerConfig.getListenPort()))
-                        //Netty服务收到一个请求，那么就会依次使用下面的处理器来处理请求，serverHandler是负责最关键的网络请求处理的
+                        // Netty服务收到一个请求，那么就会依次使用下面的处理器来处理请求，serverHandler是负责最关键的网络请求处理的
                         .childHandler(new ChannelInitializer<SocketChannel>() {
                             @Override
                             public void initChannel(SocketChannel ch) throws Exception {
-                                ch.pipeline()
-                                        .addLast(defaultEventExecutorGroup, HANDSHAKE_HANDLER_NAME, handshakeHandler)
+                                ch.pipeline().addLast(defaultEventExecutorGroup, HANDSHAKE_HANDLER_NAME, handshakeHandler)
                                         .addLast(defaultEventExecutorGroup,
                                                 encoder,
                                                 new NettyDecoder(),
                                                 new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds()),
                                                 connectionManageHandler,
-                                                serverHandler
+                                                serverHandler // 处理转发请求和响应的Handler
                                         );
                             }
                         });
@@ -214,24 +214,20 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
         if (nettyServerConfig.isServerPooledByteBufAllocatorEnable()) {
             childHandler.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
         }
-        //真正启动
-        try {
+        try { //真正启动
             ChannelFuture sync = this.serverBootstrap.bind().sync();
             InetSocketAddress addr = (InetSocketAddress) sync.channel().localAddress();
             this.port = addr.getPort();
         } catch (InterruptedException e1) {
             throw new RuntimeException("this.serverBootstrap.bind().sync() InterruptedException", e1);
         }
-
         if (this.channelEventListener != null) {
             this.nettyEventExecutor.start();
         }
-
         this.timer.scheduleAtFixedRate(new TimerTask() {
-
             @Override
             public void run() {
-                try {
+                try { // 定期扫描过期超时已弃用的请求
                     NettyRemotingServer.this.scanResponseTable();
                 } catch (Throwable e) {
                     log.error("scanResponseTable exception", e);

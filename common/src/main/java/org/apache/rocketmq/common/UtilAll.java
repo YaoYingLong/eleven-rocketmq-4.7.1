@@ -228,7 +228,6 @@ public class UtilAll {
         if (array != null) {
             return crc32(array, 0, array.length);
         }
-
         return 0;
     }
 

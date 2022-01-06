@@ -155,8 +155,7 @@ public class NamesrvStartup {
                 return null;
             }
         }));
-        // 启动服务
-        controller.start();
+        controller.start(); // 启动服务
         return controller;
     }
 

@@ -57,7 +57,7 @@ public class TopicConfigManager extends ConfigManager {
     public TopicConfigManager(BrokerController brokerController) {
         this.brokerController = brokerController;
         {
-            String topic = TopicValidator.RMQ_SYS_SELF_TEST_TOPIC;
+            String topic = TopicValidator.RMQ_SYS_SELF_TEST_TOPIC; // SELF_TEST_TOPIC
             TopicConfig topicConfig = new TopicConfig(topic);
             TopicValidator.addSystemTopic(topic);
             topicConfig.setReadQueueNums(1);
@@ -65,21 +65,19 @@ public class TopicConfigManager extends ConfigManager {
             this.topicConfigTable.put(topicConfig.getTopicName(), topicConfig);
         }
         {
-            if (this.brokerController.getBrokerConfig().isAutoCreateTopicEnable()) {
-                String topic = TopicValidator.AUTO_CREATE_TOPIC_KEY_TOPIC;
+            if (this.brokerController.getBrokerConfig().isAutoCreateTopicEnable()) { // 是否自动创建Topic，默认true
+                String topic = TopicValidator.AUTO_CREATE_TOPIC_KEY_TOPIC; // TBW102
                 TopicConfig topicConfig = new TopicConfig(topic);
                 TopicValidator.addSystemTopic(topic);
-                topicConfig.setReadQueueNums(this.brokerController.getBrokerConfig()
-                    .getDefaultTopicQueueNums());
-                topicConfig.setWriteQueueNums(this.brokerController.getBrokerConfig()
-                    .getDefaultTopicQueueNums());
+                topicConfig.setReadQueueNums(this.brokerController.getBrokerConfig().getDefaultTopicQueueNums()); // 8
+                topicConfig.setWriteQueueNums(this.brokerController.getBrokerConfig().getDefaultTopicQueueNums()); // 8
                 int perm = PermName.PERM_INHERIT | PermName.PERM_READ | PermName.PERM_WRITE;
                 topicConfig.setPerm(perm);
                 this.topicConfigTable.put(topicConfig.getTopicName(), topicConfig);
             }
         }
         {
-            String topic = TopicValidator.RMQ_SYS_BENCHMARK_TOPIC;
+            String topic = TopicValidator.RMQ_SYS_BENCHMARK_TOPIC; // BenchmarkTest
             TopicConfig topicConfig = new TopicConfig(topic);
             TopicValidator.addSystemTopic(topic);
             topicConfig.setReadQueueNums(1024);
@@ -88,7 +86,7 @@ public class TopicConfigManager extends ConfigManager {
         }
         {
 
-            String topic = this.brokerController.getBrokerConfig().getBrokerClusterName();
+            String topic = this.brokerController.getBrokerConfig().getBrokerClusterName(); // DefaultCluster
             TopicConfig topicConfig = new TopicConfig(topic);
             TopicValidator.addSystemTopic(topic);
             int perm = PermName.PERM_INHERIT;
@@ -120,16 +118,16 @@ public class TopicConfigManager extends ConfigManager {
             topicConfig.setWriteQueueNums(1);
             this.topicConfigTable.put(topicConfig.getTopicName(), topicConfig);
         }
-        {
-            String topic = TopicValidator.RMQ_SYS_SCHEDULE_TOPIC;
+        { // 创建延时队列
+            String topic = TopicValidator.RMQ_SYS_SCHEDULE_TOPIC; // SCHEDULE_TOPIC_XXXX
             TopicConfig topicConfig = new TopicConfig(topic);
             TopicValidator.addSystemTopic(topic);
-            topicConfig.setReadQueueNums(SCHEDULE_TOPIC_QUEUE_NUM);
-            topicConfig.setWriteQueueNums(SCHEDULE_TOPIC_QUEUE_NUM);
+            topicConfig.setReadQueueNums(SCHEDULE_TOPIC_QUEUE_NUM); // 18
+            topicConfig.setWriteQueueNums(SCHEDULE_TOPIC_QUEUE_NUM); // 18
             this.topicConfigTable.put(topicConfig.getTopicName(), topicConfig);
         }
         {
-            if (this.brokerController.getBrokerConfig().isTraceTopicEnable()) {
+            if (this.brokerController.getBrokerConfig().isTraceTopicEnable()) { // RMQ_SYS_TRACE_TOPIC
                 String topic = this.brokerController.getBrokerConfig().getMsgTraceTopicName();
                 TopicConfig topicConfig = new TopicConfig(topic);
                 TopicValidator.addSystemTopic(topic);

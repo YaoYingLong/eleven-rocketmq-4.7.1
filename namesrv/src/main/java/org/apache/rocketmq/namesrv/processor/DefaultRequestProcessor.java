@@ -70,14 +70,9 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
-
         if (ctx != null) {
-            log.debug("receive request, {} {} {}",
-                request.getCode(),
-                RemotingHelper.parseChannelRemoteAddr(ctx.channel()),
-                request);
+            log.debug("receive request, {} {} {}", request.getCode(), RemotingHelper.parseChannelRemoteAddr(ctx.channel()), request);
         }
-
         //K2 这里是NameServer处理请求的核心代码。根据请求类型有不同的处理过程
         switch (request.getCode()) {
             case RequestCode.PUT_KV_CONFIG:
@@ -88,25 +83,24 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
                 return this.deleteKVConfig(ctx, request);
             case RequestCode.QUERY_DATA_VERSION:
                 return queryBrokerTopicConfig(ctx, request);
-            //先关注注册Broker的请求
-            case RequestCode.REGISTER_BROKER:
+            case RequestCode.REGISTER_BROKER:   // 注册Broker的请求
                 Version brokerVersion = MQVersion.value2Version(request.getVersion());
                 if (brokerVersion.ordinal() >= MQVersion.Version.V3_0_11.ordinal()) {
                     return this.registerBrokerWithFilterServer(ctx, request);
                 } else {//注册Broker的实际方法
                     return this.registerBroker(ctx, request);
                 }
-            case RequestCode.UNREGISTER_BROKER:
+            case RequestCode.UNREGISTER_BROKER: // 注销Broker请求
                 return this.unregisterBroker(ctx, request);
-            case RequestCode.GET_ROUTEINFO_BY_TOPIC:
+            case RequestCode.GET_ROUTEINFO_BY_TOPIC: // 通过Topic获取路由信息
                 return this.getRouteInfoByTopic(ctx, request);
-            case RequestCode.GET_BROKER_CLUSTER_INFO:
+            case RequestCode.GET_BROKER_CLUSTER_INFO: // 获取Broker集群信息
                 return this.getBrokerClusterInfo(ctx, request);
             case RequestCode.WIPE_WRITE_PERM_OF_BROKER:
                 return this.wipeWritePermOfBroker(ctx, request);
-            case RequestCode.GET_ALL_TOPIC_LIST_FROM_NAMESERVER:
+            case RequestCode.GET_ALL_TOPIC_LIST_FROM_NAMESERVER: // 获取所有的Topic列表
                 return getAllTopicListFromNameserver(ctx, request);
-            case RequestCode.DELETE_TOPIC_IN_NAMESRV:
+            case RequestCode.DELETE_TOPIC_IN_NAMESRV: // 删除Topic
                 return deleteTopicInNamesrv(ctx, request);
             case RequestCode.GET_KVLIST_BY_NAMESPACE:
                 return this.getKVListByNamespace(ctx, request);
@@ -254,19 +248,15 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(QueryDataVersionResponseHeader.class);
         final QueryDataVersionResponseHeader responseHeader = (QueryDataVersionResponseHeader) response.readCustomHeader();
-        final QueryDataVersionRequestHeader requestHeader =
-            (QueryDataVersionRequestHeader) request.decodeCommandCustomHeader(QueryDataVersionRequestHeader.class);
+        final QueryDataVersionRequestHeader requestHeader = (QueryDataVersionRequestHeader) request.decodeCommandCustomHeader(QueryDataVersionRequestHeader.class);
         DataVersion dataVersion = DataVersion.decode(request.getBody(), DataVersion.class);
-
         Boolean changed = this.namesrvController.getRouteInfoManager().isBrokerTopicConfigChanged(requestHeader.getBrokerAddr(), dataVersion);
         if (!changed) {
             this.namesrvController.getRouteInfoManager().updateBrokerInfoUpdateTimestamp(requestHeader.getBrokerAddr());
         }
-
         DataVersion nameSeverDataVersion = this.namesrvController.getRouteInfoManager().queryBrokerTopicConfig(requestHeader.getBrokerAddr());
         response.setCode(ResponseCode.SUCCESS);
         response.setRemark(null);
-
         if (nameSeverDataVersion != null) {
             response.setBody(nameSeverDataVersion.encode());
         }
@@ -276,16 +266,14 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
     //K2 NameServer实际注册Broker的地方
     public RemotingCommand registerBroker(ChannelHandlerContext ctx, RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(RegisterBrokerResponseHeader.class);
-        //解析注册请求，然后构造返回响应
+        // 解析注册请求，然后构造返回响应
         final RegisterBrokerResponseHeader responseHeader = (RegisterBrokerResponseHeader) response.readCustomHeader();
         final RegisterBrokerRequestHeader requestHeader = (RegisterBrokerRequestHeader) request.decodeCommandCustomHeader(RegisterBrokerRequestHeader.class);
-
         if (!checksum(ctx, request, requestHeader)) {
             response.setCode(ResponseCode.SYSTEM_ERROR);
             response.setRemark("crc32 not match");
             return response;
         }
-
         TopicConfigSerializeWrapper topicConfigWrapper;
         if (request.getBody() != null) {
             topicConfigWrapper = TopicConfigSerializeWrapper.decode(request.getBody(), TopicConfigSerializeWrapper.class);
@@ -294,14 +282,12 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
             topicConfigWrapper.getDataVersion().setCounter(new AtomicLong(0));
             topicConfigWrapper.getDataVersion().setTimestamp(0);
         }
-        //RouteInfoMapper就是管理路由信息的核心组件。
+        // RouteInfoMapper就是管理路由信息的核心组件。
         RegisterBrokerResult result = this.namesrvController.getRouteInfoManager().registerBroker(requestHeader.getClusterName(),
             requestHeader.getBrokerAddr(), requestHeader.getBrokerName(), requestHeader.getBrokerId(), requestHeader.getHaServerAddr(),
             topicConfigWrapper, null, ctx.channel());
-
-        responseHeader.setHaServerAddr(result.getHaServerAddr());
-        responseHeader.setMasterAddr(result.getMasterAddr());
-
+        responseHeader.setHaServerAddr(result.getHaServerAddr());   // 从节点地址
+        responseHeader.setMasterAddr(result.getMasterAddr());       // Broker主节点地址
         byte[] jsonValue = this.namesrvController.getKvConfigManager().getKVListByNamespace(NamesrvUtil.NAMESPACE_ORDER_TOPIC_CONFIG);
         response.setBody(jsonValue);
         response.setCode(ResponseCode.SUCCESS);
@@ -314,13 +300,8 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
         final UnRegisterBrokerRequestHeader requestHeader =
             (UnRegisterBrokerRequestHeader) request.decodeCommandCustomHeader(UnRegisterBrokerRequestHeader.class);
-
-        this.namesrvController.getRouteInfoManager().unregisterBroker(
-            requestHeader.getClusterName(),
-            requestHeader.getBrokerAddr(),
-            requestHeader.getBrokerName(),
-            requestHeader.getBrokerId());
-
+        this.namesrvController.getRouteInfoManager().unregisterBroker(requestHeader.getClusterName(), requestHeader.getBrokerAddr(),
+            requestHeader.getBrokerName(), requestHeader.getBrokerId());
         response.setCode(ResponseCode.SUCCESS);
         response.setRemark(null);
         return response;
@@ -348,10 +329,8 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
 
     private RemotingCommand getBrokerClusterInfo(ChannelHandlerContext ctx, RemotingCommand request) {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
-
         byte[] content = this.namesrvController.getRouteInfoManager().getAllClusterInfo();
         response.setBody(content);
-
         response.setCode(ResponseCode.SUCCESS);
         response.setRemark(null);
         return response;
@@ -381,9 +360,7 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
 
     private RemotingCommand getAllTopicListFromNameserver(ChannelHandlerContext ctx, RemotingCommand request) {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
-
         byte[] body = this.namesrvController.getRouteInfoManager().getAllTopicList();
-
         response.setBody(body);
         response.setCode(ResponseCode.SUCCESS);
         response.setRemark(null);
@@ -488,9 +465,7 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
         if (ctx != null) {
             log.info("updateConfig called by {}", RemotingHelper.parseChannelRemoteAddr(ctx.channel()));
         }
-
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
-
         byte[] body = request.getBody();
         if (body != null) {
             String bodyStr;
@@ -502,7 +477,6 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
                 response.setRemark("UnsupportedEncodingException " + e);
                 return response;
             }
-
             Properties properties = MixAll.string2Properties(bodyStr);
             if (properties == null) {
                 log.error("updateConfig MixAll.string2Properties error {}", bodyStr);
@@ -510,10 +484,8 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
                 response.setRemark("string2Properties error");
                 return response;
             }
-
             this.namesrvController.getConfiguration().update(properties);
         }
-
         response.setCode(ResponseCode.SUCCESS);
         response.setRemark(null);
         return response;
@@ -521,7 +493,6 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
 
     private RemotingCommand getConfig(ChannelHandlerContext ctx, RemotingCommand request) {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
-
         String content = this.namesrvController.getConfiguration().getAllConfigsFormatString();
         if (content != null && content.length() > 0) {
             try {

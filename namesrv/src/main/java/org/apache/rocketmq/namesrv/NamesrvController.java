@@ -74,63 +74,53 @@ public class NamesrvController {
 
     //K1 NameController初始化
     public boolean initialize() {
-        //加载KV配置
-        this.kvConfigManager.load();
-        //创建NettyServer网络处理对象
+        this.kvConfigManager.load(); // 加载KV配置
+        // 创建NettyServer网络处理对象
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
-        //Netty服务器的工作线程池
+        // Netty服务器的工作线程池
         this.remotingExecutor = Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(), new ThreadFactoryImpl("RemotingExecutorThread_"));
-        //注册Processor，把remotingExecutor注入到remotingServer中
-        this.registerProcessor();
-
-        //开启定时任务:每隔10s扫描一次Broker,移除不活跃的Broker
+        this.registerProcessor(); // 注册Processor，把remotingExecutor注入到remotingServer中
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             @Override
-            public void run() {
+            public void run() { // 开启定时任务，每隔10s扫描一次Broker，移除不活跃的Broker，超过120s未接收到心跳则移除
                 NamesrvController.this.routeInfoManager.scanNotActiveBroker();
             }
         }, 5, 10, TimeUnit.SECONDS);
-        //开启定时任务:每隔10min打印一次KV配置
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             @Override
-            public void run() {
+            public void run() { //开启定时任务，每隔10min打印一次KV配置
                 NamesrvController.this.kvConfigManager.printAllPeriodically();
             }
         }, 1, 10, TimeUnit.MINUTES);
-
         if (TlsSystemConfig.tlsMode != TlsMode.DISABLED) {
             // Register a listener to reload SslContext
             try {
-                fileWatchService = new FileWatchService(
-                        new String[]{
-                                TlsSystemConfig.tlsServerCertPath,
-                                TlsSystemConfig.tlsServerKeyPath,
-                                TlsSystemConfig.tlsServerTrustCertPath
-                        },
-                        new FileWatchService.Listener() {
-                            boolean certChanged, keyChanged = false;
-                            @Override
-                            public void onChanged(String path) { // 配置文件热加载体现
-                                if (path.equals(TlsSystemConfig.tlsServerTrustCertPath)) {
-                                    log.info("The trust certificate changed, reload the ssl context");
-                                    reloadServerSslContext();
-                                }
-                                if (path.equals(TlsSystemConfig.tlsServerCertPath)) {
-                                    certChanged = true;
-                                }
-                                if (path.equals(TlsSystemConfig.tlsServerKeyPath)) {
-                                    keyChanged = true;
-                                }
-                                if (certChanged && keyChanged) {
-                                    log.info("The certificate and private key changed, reload the ssl context");
-                                    certChanged = keyChanged = false;
-                                    reloadServerSslContext();
-                                }
-                            }
-                            private void reloadServerSslContext() {
-                                ((NettyRemotingServer) remotingServer).loadSslContext();
-                            }
-                        });
+                fileWatchService = new FileWatchService(new String[]{TlsSystemConfig.tlsServerCertPath, TlsSystemConfig.tlsServerKeyPath, TlsSystemConfig.tlsServerTrustCertPath}, new FileWatchService.Listener() {
+                    boolean certChanged, keyChanged = false;
+
+                    @Override
+                    public void onChanged(String path) { // 配置文件热加载体现
+                        if (path.equals(TlsSystemConfig.tlsServerTrustCertPath)) {
+                            log.info("The trust certificate changed, reload the ssl context");
+                            reloadServerSslContext();
+                        }
+                        if (path.equals(TlsSystemConfig.tlsServerCertPath)) {
+                            certChanged = true;
+                        }
+                        if (path.equals(TlsSystemConfig.tlsServerKeyPath)) {
+                            keyChanged = true;
+                        }
+                        if (certChanged && keyChanged) {
+                            log.info("The certificate and private key changed, reload the ssl context");
+                            certChanged = keyChanged = false;
+                            reloadServerSslContext();
+                        }
+                    }
+
+                    private void reloadServerSslContext() {
+                        ((NettyRemotingServer) remotingServer).loadSslContext();
+                    }
+                });
             } catch (Exception e) {
                 log.warn("FileWatchService created error, can't load the certificate dynamically");
             }
@@ -139,11 +129,9 @@ public class NamesrvController {
     }
 
     private void registerProcessor() {
-        if (namesrvConfig.isClusterTest()) {
-            //测试集群，先不用管
+        if (namesrvConfig.isClusterTest()) { // 测试集群，先不用管
             this.remotingServer.registerDefaultProcessor(new ClusterTestRequestProcessor(this, namesrvConfig.getProductEnvName()), this.remotingExecutor);
-        } else {
-            //NettyServer接收到的网络请求，就会由这个组件来处理。
+        } else { // NettyServer接收到的网络请求，就会由这个组件来处理。
             this.remotingServer.registerDefaultProcessor(new DefaultRequestProcessor(this), this.remotingExecutor);
         }
     }

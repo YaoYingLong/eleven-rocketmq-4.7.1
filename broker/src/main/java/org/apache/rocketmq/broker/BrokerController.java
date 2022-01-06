@@ -139,24 +139,17 @@ public class BrokerController {
     private Future<?> slaveSyncFuture;
     private Map<Class, AccessValidator> accessValidatorMap = new HashMap<Class, AccessValidator>();
 
-    public BrokerController(
-            final BrokerConfig brokerConfig,
-            final NettyServerConfig nettyServerConfig,
-            final NettyClientConfig nettyClientConfig,
-            final MessageStoreConfig messageStoreConfig
-    ) {
+    public BrokerController(final BrokerConfig brokerConfig, final NettyServerConfig nettyServerConfig,
+                            final NettyClientConfig nettyClientConfig, final MessageStoreConfig messageStoreConfig) {
         //四个核心组件保存起来。
         this.brokerConfig = brokerConfig;
         this.nettyServerConfig = nettyServerConfig;
         this.nettyClientConfig = nettyClientConfig;
         this.messageStoreConfig = messageStoreConfig;
         //K2 Broker的各种功能对应的组件。
-        //管理consumer消费offset
-        this.consumerOffsetManager = new ConsumerOffsetManager(this);
-        //管理Topic配置
-        this.topicConfigManager = new TopicConfigManager(this);
-        //处理Consumer拉取消息的请求的
-        this.pullMessageProcessor = new PullMessageProcessor(this);
+        this.consumerOffsetManager = new ConsumerOffsetManager(this);// 管理consumer消费offset
+        this.topicConfigManager = new TopicConfigManager(this); // 管理Topic配置，创建一系列系统默认的队列
+        this.pullMessageProcessor = new PullMessageProcessor(this); // 处理Consumer拉取消息的请求的
         this.pullRequestHoldService = new PullRequestHoldService(this);
         this.messageArrivingListener = new NotifyMessageArrivingListener(this.pullRequestHoldService);
 
@@ -180,16 +173,13 @@ public class BrokerController {
         this.consumerManagerThreadPoolQueue = new LinkedBlockingQueue<Runnable>(this.brokerConfig.getConsumerManagerThreadPoolQueueCapacity());
         this.heartbeatThreadPoolQueue = new LinkedBlockingQueue<Runnable>(this.brokerConfig.getHeartbeatThreadPoolQueueCapacity());
         this.endTransactionThreadPoolQueue = new LinkedBlockingQueue<Runnable>(this.brokerConfig.getEndTransactionPoolQueueCapacity());
-        //也是Borker的一些功能性组件。
+        // 也是Borker的一些功能性组件。
         this.brokerStatsManager = new BrokerStatsManager(this.brokerConfig.getBrokerClusterName());
         this.setStoreHost(new InetSocketAddress(this.getBrokerConfig().getBrokerIP1(), this.getNettyServerConfig().getListenPort()));
 
         this.brokerFastFailure = new BrokerFastFailure(this);
-        this.configuration = new Configuration(
-                log,
-                BrokerPathConfigHelper.getBrokerConfigPath(),
-                this.brokerConfig, this.nettyServerConfig, this.nettyClientConfig, this.messageStoreConfig
-        );
+        this.configuration = new Configuration(log, BrokerPathConfigHelper.getBrokerConfigPath(),
+                this.brokerConfig, this.nettyServerConfig, this.nettyClientConfig, this.messageStoreConfig);
     }
 
     public BrokerConfig getBrokerConfig() {
@@ -824,9 +814,8 @@ public class BrokerController {
 
     //BrokerController核心的启动方法
     public void start() throws Exception {
-        //启动核心的消息存储组件
         if (this.messageStore != null) {
-            this.messageStore.start();
+            this.messageStore.start(); // 启动核心的消息存储组件
         }
         //K2 Broker中启动了两个Netty服务，这样就可以接收请求了。
         if (this.remotingServer != null) {
@@ -909,8 +898,7 @@ public class BrokerController {
     }
 
     //K2 roker注册最核心的部分
-    private void doRegisterBrokerAll(boolean checkOrderConfig, boolean oneway,
-                                     TopicConfigSerializeWrapper topicConfigWrapper) {
+    private void doRegisterBrokerAll(boolean checkOrderConfig, boolean oneway, TopicConfigSerializeWrapper topicConfigWrapper) {
         //为什么返回的是个List？这就是因为Broker是向所有的NameServer进行注册。
         List<RegisterBrokerResult> registerBrokerResultList = this.brokerOuterAPI.registerBrokerAll(
                 this.brokerConfig.getBrokerClusterName(),
