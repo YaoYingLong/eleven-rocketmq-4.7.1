@@ -418,16 +418,8 @@ public class MQClientAPIImpl {
 
     }
 
-    public SendResult sendMessage(
-        final String addr,
-        final String brokerName,
-        final Message msg,
-        final SendMessageRequestHeader requestHeader,
-        final long timeoutMillis,
-        final CommunicationMode communicationMode,
-        final SendMessageContext context,
-        final DefaultMQProducerImpl producer
-    ) throws RemotingException, MQBrokerException, InterruptedException {
+    public SendResult sendMessage(final String addr, final String brokerName, final Message msg, final SendMessageRequestHeader requestHeader, final long timeoutMillis, final CommunicationMode communicationMode,
+        final SendMessageContext context, final DefaultMQProducerImpl producer) throws RemotingException, MQBrokerException, InterruptedException {
         return sendMessage(addr, brokerName, msg, requestHeader, timeoutMillis, communicationMode, null, null, null, 0, context, producer);
     }
     //K2 Producer发送消息的方法
@@ -1030,15 +1022,12 @@ public class MQClientAPIImpl {
         throw new MQBrokerException(response.getCode(), response.getRemark());
     }
 
-    public Set<MessageQueue> lockBatchMQ(
-        final String addr,
-        final LockBatchRequestBody requestBody,
+    public Set<MessageQueue> lockBatchMQ(final String addr, final LockBatchRequestBody requestBody,
         final long timeoutMillis) throws RemotingException, MQBrokerException, InterruptedException {
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.LOCK_BATCH_MQ, null);
 
         request.setBody(requestBody.encode());
-        RemotingCommand response = this.remotingClient.invokeSync(MixAll.brokerVIPChannel(this.clientConfig.isVipChannelEnabled(), addr),
-            request, timeoutMillis);
+        RemotingCommand response = this.remotingClient.invokeSync(MixAll.brokerVIPChannel(this.clientConfig.isVipChannelEnabled(), addr), request, timeoutMillis);
         switch (response.getCode()) {
             case ResponseCode.SUCCESS: {
                 LockBatchResponseBody responseBody = LockBatchResponseBody.decode(response.getBody(), LockBatchResponseBody.class);

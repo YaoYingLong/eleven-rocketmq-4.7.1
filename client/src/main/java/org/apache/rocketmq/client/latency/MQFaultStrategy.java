@@ -54,7 +54,7 @@ public class MQFaultStrategy {
     public void setSendLatencyFaultEnable(final boolean sendLatencyFaultEnable) {
         this.sendLatencyFaultEnable = sendLatencyFaultEnable;
     }
-    //Producer选择MessageQueue的方法
+    // Producer选择MessageQueue的方法
     public MessageQueue selectOneMessageQueue(final TopicPublishInfo tpInfo, final String lastBrokerName) {
         //这个sendLatencyFaultEnable默认是关闭的，Broker故障延迟机制，表示一种发送消息失败后一定时间内不在往同一个Queue重复发送的机制
         if (this.sendLatencyFaultEnable) {
@@ -66,7 +66,7 @@ public class MQFaultStrategy {
                     if (pos < 0)
                         pos = 0;
                     MessageQueue mq = tpInfo.getMessageQueueList().get(pos);
-                    //Broker轮询。尽量将请求平均分配给不同的Broker
+                    // Broker轮询，尽量将请求平均分配给不同的Broker
                     if (latencyFaultTolerance.isAvailable(mq.getBrokerName())) {
                         if (null == lastBrokerName || mq.getBrokerName().equals(lastBrokerName))
                             return mq;
@@ -94,7 +94,7 @@ public class MQFaultStrategy {
     }
 
     public void updateFaultItem(final String brokerName, final long currentLatency, boolean isolation) {
-        if (this.sendLatencyFaultEnable) {
+        if (this.sendLatencyFaultEnable) { // sendLatencyFaultEnable默认false
             long duration = computeNotAvailableDuration(isolation ? 30000 : currentLatency);
             this.latencyFaultTolerance.updateFaultItem(brokerName, currentLatency, duration);
         }
@@ -105,7 +105,6 @@ public class MQFaultStrategy {
             if (currentLatency >= latencyMax[i])
                 return this.notAvailableDuration[i];
         }
-
         return 0;
     }
 }

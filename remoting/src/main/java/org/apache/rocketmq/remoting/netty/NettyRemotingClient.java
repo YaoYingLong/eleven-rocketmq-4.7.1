@@ -342,7 +342,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         }
     }
 
-    //使用Netty客户端同步拉取消息
+    // 使用Netty客户端同步拉取消息
     @Override
     public RemotingCommand invokeSync(String addr, final RemotingCommand request, long timeoutMillis)
             throws InterruptedException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException {
@@ -352,8 +352,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         //这个判断就是说网络连接如果是ok的，就发送请求
         if (channel != null && channel.isActive()) {
             try {
-                //计算时间的代码，不用太关注。
-                doBeforeRpcHooks(addr, request);
+                doBeforeRpcHooks(addr, request); // 计算时间的代码，不用太关注。
                 long costTime = System.currentTimeMillis() - beginStartTime;
                 if (timeoutMillis < costTime) {
                     throw new RemotingTimeoutException("invokeSync call timeout");

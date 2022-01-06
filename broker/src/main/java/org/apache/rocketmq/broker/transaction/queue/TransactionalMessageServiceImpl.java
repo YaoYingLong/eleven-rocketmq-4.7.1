@@ -114,7 +114,7 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
     @Override
     public void check(long transactionTimeout, int transactionCheckMax, AbstractTransactionalMessageCheckListener listener) {
         try {
-            String topic = TopicValidator.RMQ_SYS_TRANS_HALF_TOPIC;
+            String topic = TopicValidator.RMQ_SYS_TRANS_HALF_TOPIC; // RMQ_SYS_TRANS_HALF_TOPIC
             Set<MessageQueue> msgQueues = transactionalMessageBridge.fetchMessageQueues(topic);
             if (msgQueues == null || msgQueues.size() == 0) {
                 log.warn("The queue of topic is empty :" + topic);
@@ -123,7 +123,7 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
             log.debug("Check topic={}, queues={}", topic, msgQueues);
             for (MessageQueue messageQueue : msgQueues) {
                 long startTime = System.currentTimeMillis();
-                MessageQueue opQueue = getOpQueue(messageQueue);
+                MessageQueue opQueue = getOpQueue(messageQueue); // 获取RMQ_SYS_TRANS_OP_HALF_TOPIC事务完成队列
                 long halfOffset = transactionalMessageBridge.fetchConsumeOffset(messageQueue);
                 long opOffset = transactionalMessageBridge.fetchConsumeOffset(opQueue);
                 log.info("Before check, the queue={} msgOffset={} opOffset={}", messageQueue, halfOffset, opOffset);
@@ -200,12 +200,11 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                         boolean isNeedCheck = (opMsg == null && valueOfCurrentMinusBorn > checkImmunityTime)
                             || (opMsg != null && (opMsg.get(opMsg.size() - 1).getBornTimestamp() - startTime > transactionTimeout))
                             || (valueOfCurrentMinusBorn <= -1);
-
                         if (isNeedCheck) {
                             if (!putBackHalfMsgQueue(msgExt, i)) { // 写回RMQ_SYS_TRANS_HALF_TOPIC队列中
                                 continue;
                             }
-                            listener.resolveHalfMsg(msgExt);
+                            listener.resolveHalfMsg(msgExt); // 回调客户端checkLocalTransaction方法
                         } else {
                             pullResult = fillOpRemoveMap(removeMap, opQueue, pullResult.getNextBeginOffset(), halfOffset, doneOpOffset);
                             log.debug("The miss offset:{} in messageQueue:{} need to get more opMsg, result is:{}", i, messageQueue, pullResult);
@@ -251,7 +250,7 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
      */
     private PullResult fillOpRemoveMap(HashMap<Long, Long> removeMap,
         MessageQueue opQueue, long pullOffsetOfOp, long miniOffset, List<Long> doneOpOffset) {
-        PullResult pullResult = pullOpMsg(opQueue, pullOffsetOfOp, 32);
+        PullResult pullResult = pullOpMsg(opQueue, pullOffsetOfOp, 32); // 阅读来自 On Topic的消息
         if (null == pullResult) {
             return null;
         }

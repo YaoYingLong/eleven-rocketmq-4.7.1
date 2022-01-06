@@ -48,8 +48,8 @@ public class TransactionalMessageCheckService extends ServiceThread {
 
     @Override
     protected void onWaitEnd() {
-        long timeout = brokerController.getBrokerConfig().getTransactionTimeOut(); // 获取超时时间
-        int checkMax = brokerController.getBrokerConfig().getTransactionCheckMax();  // 获取最大回查次数
+        long timeout = brokerController.getBrokerConfig().getTransactionTimeOut(); // 获取超时时间6s
+        int checkMax = brokerController.getBrokerConfig().getTransactionCheckMax();  // 获取最大回查次数15
         long begin = System.currentTimeMillis();
         log.info("Begin to check prepare message, begin time:{}", begin);
         this.brokerController.getTransactionalMessageService().check(timeout, checkMax, this.brokerController.getTransactionalMessageCheckListener());

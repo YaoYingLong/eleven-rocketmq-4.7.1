@@ -99,7 +99,6 @@ public class TopicPublishInfo {
                 return queueData.getWriteQueueNums();
             }
         }
-
         return -1;
     }
 

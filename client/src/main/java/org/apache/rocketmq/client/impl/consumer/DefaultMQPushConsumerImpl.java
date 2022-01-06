@@ -238,7 +238,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
             }
             return;
         }
-        if (!this.consumeOrderly) { // 若是有序消息
+        if (!this.consumeOrderly) { // 若不是有序消息
             if (processQueue.getMaxSpan() > this.defaultMQPushConsumer.getConsumeConcurrentlyMaxSpan()) {
                 this.executePullRequestLater(pullRequest, PULL_TIME_DELAY_MILLS_WHEN_FLOW_CONTROL);
                 if ((queueMaxSpanFlowControlTimes++ % 1000) == 0) {
@@ -503,7 +503,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                 }
                 //K2 客户端创建工厂，这个是核心对象
                 this.mQClientFactory = MQClientManager.getInstance().getOrCreateMQClientInstance(this.defaultMQPushConsumer, this.rpcHook);
-                this.rebalanceImpl.setConsumerGroup(this.defaultMQPushConsumer.getConsumerGroup());
+                this.rebalanceImpl.setConsumerGroup(this.defaultMQPushConsumer.getConsumerGroup()); // 顺序消息关键
                 this.rebalanceImpl.setMessageModel(this.defaultMQPushConsumer.getMessageModel());
                 // 集群模式下消费者策略
                 this.rebalanceImpl.setAllocateMessageQueueStrategy(this.defaultMQPushConsumer.getAllocateMessageQueueStrategy());
@@ -528,7 +528,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                 this.offsetStore.load();
                 //根据客户端配置实例化不同的consumeMessageService
                 if (this.getMessageListenerInner() instanceof MessageListenerOrderly) { // 顺序消息
-                    this.consumeOrderly = true;
+                    this.consumeOrderly = true; // 在doRebalance方法中用到
                     this.consumeMessageService = new ConsumeMessageOrderlyService(this, (MessageListenerOrderly) this.getMessageListenerInner());
                 } else if (this.getMessageListenerInner() instanceof MessageListenerConcurrently) { // 非顺序消息
                     this.consumeOrderly = false;

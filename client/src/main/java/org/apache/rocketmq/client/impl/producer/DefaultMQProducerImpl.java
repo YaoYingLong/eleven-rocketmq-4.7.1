@@ -297,6 +297,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     log.warn("CheckTransactionState, pick transactionCheckListener by group[{}] failed", group);
                 }
             }
+
             private void processTransactionState(final LocalTransactionState localTransactionState, final String producerGroup, final Throwable exception) {
                 final EndTransactionRequestHeader thisHeader = new EndTransactionRequestHeader();
                 thisHeader.setCommitLogOffset(checkRequestHeader.getCommitLogOffset());
@@ -437,7 +438,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         ExecutorService executor = this.getAsyncSenderExecutor();
         try {
             executor.submit(new Runnable() {
-                @Override public void run() {
+                @Override
+                public void run() {
                     long costTime = System.currentTimeMillis() - beginStartTime;
                     if (timeout > costTime) {
                         try {
@@ -490,38 +492,36 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             int timesTotal = communicationMode == CommunicationMode.SYNC ? 1 + this.defaultMQProducer.getRetryTimesWhenSendFailed() : 1;
             int times = 0;
             String[] brokersSent = new String[timesTotal];
-            for (; times < timesTotal; times++) {
+            for (; times < timesTotal; times++) { // 重试次数，异步默认重试2次共3次，同步不重试共1次
                 String lastBrokerName = null == mq ? null : mq.getBrokerName();
-                //K2 Producer计算把消息发到哪个MessageQueue中。
+                //K2 Producer计算把消息发到哪个MessageQueue中，自增然后取模
                 MessageQueue mqSelected = this.selectOneMessageQueue(topicPublishInfo, lastBrokerName);
                 if (mqSelected != null) {
                     mq = mqSelected;
-                    //根据MessageQueue去获取目标节点的信息。
-                    brokersSent[times] = mq.getBrokerName();
+                    brokersSent[times] = mq.getBrokerName(); // 根据MessageQueue去获取目标节点的信息。
                     try {
                         beginTimestampPrev = System.currentTimeMillis();
-                        if (times > 0) {
-                            //Reset topic with namespace during resend.
+                        if (times > 0) { //Reset topic with namespace during resend. 重新发送期间使用命名空间重置主题
                             msg.setTopic(this.defaultMQProducer.withNamespace(msg.getTopic()));
                         }
                         long costTime = beginTimestampPrev - beginTimestampFirst;
-                        if (timeout < costTime) {
+                        if (timeout < costTime) { // 判断是否超时，默认3s
                             callTimeout = true;
                             break;
                         }
-                        //实际发送消息的方法
+                        // 实际发送消息的方法
                         sendResult = this.sendKernelImpl(msg, mq, communicationMode, sendCallback, topicPublishInfo, timeout - costTime);
                         endTimestamp = System.currentTimeMillis();
                         this.updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, false);
                         switch (communicationMode) {
                             case ASYNC:
-                                return null;
+                                return null; // 异步发送返回null
                             case ONEWAY:
-                                return null;
+                                return null; // 单向发送返回null
                             case SYNC:
                                 if (sendResult.getSendStatus() != SendStatus.SEND_OK) {
                                     if (this.defaultMQProducer.isRetryAnotherBrokerWhenNotStoreOK()) {
-                                        continue;
+                                        continue; // 若重试则继续，否则直接返回结果
                                     }
                                 }
                                 return sendResult;
@@ -622,7 +622,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                       final SendCallback sendCallback, final TopicPublishInfo topicPublishInfo, final long timeout)
             throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         long beginStartTime = System.currentTimeMillis();
-        String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
+        String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName()); // 找到Master节点地址
         if (null == brokerAddr) {// 通过Broker名称获取Broker地址，若获取不到则去NameServer上获取。
             tryToFindTopicPublishInfo(mq.getTopic());
             brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
@@ -962,13 +962,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         return this.sendSelectImpl(msg, selector, arg, CommunicationMode.SYNC, null, timeout);
     }
 
-    private SendResult sendSelectImpl(
-            Message msg,
-            MessageQueueSelector selector,
-            Object arg,
-            final CommunicationMode communicationMode,
-            final SendCallback sendCallback, final long timeout
-    ) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+    private SendResult sendSelectImpl(Message msg, MessageQueueSelector selector, Object arg, final CommunicationMode communicationMode, final SendCallback sendCallback, final long timeout) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         long beginStartTime = System.currentTimeMillis();
         this.makeSureStateOK();
         Validators.checkMessage(msg, this.defaultMQProducer);
