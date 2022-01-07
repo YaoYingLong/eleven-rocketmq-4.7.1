@@ -324,7 +324,6 @@ public class ConsumeQueue {
         if (isExtReadEnable()) {
             result = result & this.consumeQueueExt.flush(flushLeastPages);
         }
-
         return result;
     }
 

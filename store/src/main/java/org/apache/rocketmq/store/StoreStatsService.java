@@ -446,19 +446,15 @@ public class StoreStatsService extends ServiceThread {
 
     public void run() {
         log.info(this.getServiceName() + " service started");
-
         while (!this.isStopped()) {
             try {
                 this.waitForRunning(FREQUENCY_OF_SAMPLING);
-
                 this.sampling();
-
                 this.printTps();
             } catch (Exception e) {
                 log.warn(this.getServiceName() + " service has exception. ", e);
             }
         }
-
         log.info(this.getServiceName() + " service end");
     }
 

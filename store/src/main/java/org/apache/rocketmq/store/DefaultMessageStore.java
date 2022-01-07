@@ -58,7 +58,7 @@ public class DefaultMessageStore implements MessageStore {
     private final CommitLog commitLog;
     //消息队列存储缓存
     private final ConcurrentMap<String/* topic */, ConcurrentMap<Integer/* queueId */, ConsumeQueue>> consumeQueueTable;
-    //消息队列文件刷盘线程
+    // 消息队列文件刷盘线程
     private final FlushConsumeQueueService flushConsumeQueueService;
     //清除CommitLog文件服务
     private final CleanCommitLogService cleanCommitLogService;
@@ -255,8 +255,8 @@ public class DefaultMessageStore implements MessageStore {
             this.handleScheduleMessageService(messageStoreConfig.getBrokerRole());
         }
 
-        this.flushConsumeQueueService.start();
-        this.commitLog.start();
+        this.flushConsumeQueueService.start();// 消息队列文件刷盘线程，1秒执行一次
+        this.commitLog.start(); //  开启FlushCommitLogService刷盘线程
         this.storeStatsService.start();
 
         this.createTempFile();
@@ -1753,13 +1753,11 @@ public class DefaultMessageStore implements MessageStore {
 
         private void doFlush(int retryTimes) {
             int flushConsumeQueueLeastPages = DefaultMessageStore.this.getMessageStoreConfig().getFlushConsumeQueueLeastPages();
-
             if (retryTimes == RETRY_TIMES_OVER) {
                 flushConsumeQueueLeastPages = 0;
             }
-
             long logicsMsgTimestamp = 0;
-
+            // flushConsumeQueueThoroughInterval默认60s
             int flushConsumeQueueThoroughInterval = DefaultMessageStore.this.getMessageStoreConfig().getFlushConsumeQueueThoroughInterval();
             long currentTimeMillis = System.currentTimeMillis();
             if (currentTimeMillis >= (this.lastFlushTimestamp + flushConsumeQueueThoroughInterval)) {
@@ -1767,7 +1765,6 @@ public class DefaultMessageStore implements MessageStore {
                 flushConsumeQueueLeastPages = 0;
                 logicsMsgTimestamp = DefaultMessageStore.this.getStoreCheckpoint().getLogicsMsgTimestamp();
             }
-
             ConcurrentMap<String, ConcurrentMap<Integer, ConsumeQueue>> tables = DefaultMessageStore.this.consumeQueueTable;
             for (ConcurrentMap<Integer, ConsumeQueue> maps : tables.values()) {
                 for (ConsumeQueue cq : maps.values()) {
@@ -1785,7 +1782,7 @@ public class DefaultMessageStore implements MessageStore {
             }
         }
 
-        public void run() {
+        public void run() { // 1s执行一次
             DefaultMessageStore.log.info(this.getServiceName() + " service started");
             while (!this.isStopped()) {
                 try {

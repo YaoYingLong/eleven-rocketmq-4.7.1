@@ -102,7 +102,6 @@ public class CommitLog {
 
     public void start() {
         this.flushCommitLogService.start();
-
         if (defaultMessageStore.getMessageStoreConfig().isTransientStorePoolEnable()) {
             this.commitLogService.start();
         }
@@ -1260,11 +1259,11 @@ public class CommitLog {
             CommitLog.log.info(this.getServiceName() + " service started");
             while (!this.isStopped()) {
                 boolean flushCommitLogTimed = CommitLog.this.defaultMessageStore.getMessageStoreConfig().isFlushCommitLogTimed();
+                // interval默认500ms
                 int interval = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getFlushIntervalCommitLog();
                 int flushPhysicQueueLeastPages = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getFlushCommitLogLeastPages();
 
                 int flushPhysicQueueThoroughInterval = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getFlushCommitLogThoroughInterval();
-
                 boolean printFlushProgress = false;
 
                 // Print flush progress
@@ -1281,11 +1280,9 @@ public class CommitLog {
                     } else {
                         this.waitForRunning(interval);
                     }
-
                     if (printFlushProgress) {
                         this.printFlushProgress();
                     }
-
                     long begin = System.currentTimeMillis();
                     CommitLog.this.mappedFileQueue.flush(flushPhysicQueueLeastPages);
                     long storeTimestamp = CommitLog.this.mappedFileQueue.getStoreTimestamp();
@@ -1301,16 +1298,13 @@ public class CommitLog {
                     this.printFlushProgress();
                 }
             }
-
             // Normal shutdown, to ensure that all the flush before exit
             boolean result = false;
             for (int i = 0; i < RETRY_TIMES_OVER && !result; i++) {
                 result = CommitLog.this.mappedFileQueue.flush(0);
                 CommitLog.log.info(this.getServiceName() + " service shutdown, retry " + (i + 1) + " times " + (result ? "OK" : "Not OK"));
             }
-
             this.printFlushProgress();
-
             CommitLog.log.info(this.getServiceName() + " service end");
         }
 
