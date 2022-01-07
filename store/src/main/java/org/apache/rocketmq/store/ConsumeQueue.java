@@ -44,29 +44,18 @@ public class ConsumeQueue {
     private volatile long minLogicOffset = 0;
     private ConsumeQueueExt consumeQueueExt = null;
 
-    public ConsumeQueue(
-        final String topic,
-        final int queueId,
-        final String storePath,
-        final int mappedFileSize,
-        final DefaultMessageStore defaultMessageStore) {
+    public ConsumeQueue(final String topic, final int queueId, final String storePath, final int mappedFileSize, final DefaultMessageStore defaultMessageStore) {
         this.storePath = storePath;
         this.mappedFileSize = mappedFileSize;
         this.defaultMessageStore = defaultMessageStore;
 
         this.topic = topic;
         this.queueId = queueId;
-
         String queueDir = this.storePath + File.separator + topic + File.separator + queueId;
-
         this.mappedFileQueue = new MappedFileQueue(queueDir, mappedFileSize, null);
-
         this.byteBufferIndex = ByteBuffer.allocate(CQ_STORE_UNIT_SIZE);
-
         if (defaultMessageStore.getMessageStoreConfig().isEnableConsumeQueueExt()) {
-            this.consumeQueueExt = new ConsumeQueueExt(
-                topic,
-                queueId,
+            this.consumeQueueExt = new ConsumeQueueExt(topic, queueId,
                 StorePathConfigHelper.getStorePathConsumeQueueExt(defaultMessageStore.getMessageStoreConfig().getStorePathRootDir()),
                 defaultMessageStore.getMessageStoreConfig().getMappedFileSizeConsumeQueueExt(),
                 defaultMessageStore.getMessageStoreConfig().getBitMapLengthConsumeQueueExt()

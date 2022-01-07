@@ -64,28 +64,15 @@ public class ConsumeQueueExt {
      * @param mappedFileSize file size
      * @param bitMapLength bit map length.
      */
-    public ConsumeQueueExt(final String topic,
-        final int queueId,
-        final String storePath,
-        final int mappedFileSize,
-        final int bitMapLength) {
-
+    public ConsumeQueueExt(final String topic, final int queueId, final String storePath, final int mappedFileSize, final int bitMapLength) {
         this.storePath = storePath;
         this.mappedFileSize = mappedFileSize;
-
         this.topic = topic;
         this.queueId = queueId;
-
-        String queueDir = this.storePath
-            + File.separator + topic
-            + File.separator + queueId;
-
+        String queueDir = this.storePath + File.separator + topic + File.separator + queueId;
         this.mappedFileQueue = new MappedFileQueue(queueDir, mappedFileSize, null);
-
         if (bitMapLength > 0) {
-            this.tempContainer = ByteBuffer.allocate(
-                bitMapLength / Byte.SIZE
-            );
+            this.tempContainer = ByteBuffer.allocate(bitMapLength / Byte.SIZE);
         }
     }
 
