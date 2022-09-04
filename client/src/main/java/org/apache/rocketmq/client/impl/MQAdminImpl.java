@@ -206,7 +206,6 @@ public class MQAdminImpl {
             this.mQClientFactory.updateTopicRouteInfoFromNameServer(mq.getTopic());
             brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
         }
-
         if (brokerAddr != null) {
             try {
                 return this.mQClientFactory.getMQClientAPIImpl().getMaxOffset(brokerAddr, mq.getTopic(), mq.getQueueId(), timeoutMillis);
@@ -214,7 +213,6 @@ public class MQAdminImpl {
                 throw new MQClientException("Invoke Broker[" + brokerAddr + "] exception", e);
             }
         }
-
         throw new MQClientException("The broker[" + mq.getBrokerName() + "] not exist", null);
     }
 

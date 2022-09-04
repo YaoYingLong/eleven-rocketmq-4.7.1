@@ -89,7 +89,6 @@ public class IndexService {
             if (this.indexFileList.isEmpty()) {
                 return;
             }
-
             long endPhyOffset = this.indexFileList.get(0).getEndPhyOffset();
             if (endPhyOffset < offset) {
                 files = this.indexFileList.toArray();
@@ -99,7 +98,6 @@ public class IndexService {
         } finally {
             this.readWriteLock.readLock().unlock();
         }
-
         if (files != null) {
             List<IndexFile> fileList = new ArrayList<IndexFile>();
             for (int i = 0; i < (files.length - 1); i++) {
@@ -110,7 +108,6 @@ public class IndexService {
                     break;
                 }
             }
-
             this.deleteExpiredFile(fileList);
         }
     }
@@ -199,7 +196,7 @@ public class IndexService {
             DispatchRequest msg = req;
             String topic = msg.getTopic();
             String keys = msg.getKeys();
-            if (msg.getCommitLogOffset() < endPhyOffset) { //重复消息直接返回
+            if (msg.getCommitLogOffset() < endPhyOffset) { // 重复消息直接返回
                 return;
             }
             final int tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());

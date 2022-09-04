@@ -41,14 +41,12 @@ public class RequestFutureTable {
         while (it.hasNext()) {
             Map.Entry<String, RequestResponseFuture> next = it.next();
             RequestResponseFuture rep = next.getValue();
-
             if (rep.isTimeout()) {
                 it.remove();
                 rfList.add(rep);
                 log.warn("remove timeout request, CorrelationId={}" + rep.getCorrelationId());
             }
         }
-
         for (RequestResponseFuture rf : rfList) {
             try {
                 Throwable cause = new RequestTimeoutException(ClientErrorCode.REQUEST_TIMEOUT_EXCEPTION, "request timeout, no reply message.");

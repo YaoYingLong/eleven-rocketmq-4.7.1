@@ -46,8 +46,7 @@ public class ConsumerFilterManager extends ConfigManager {
 
     private static final long MS_24_HOUR = 24 * 3600 * 1000;
 
-    private ConcurrentMap<String/*Topic*/, FilterDataMapByTopic>
-        filterDataByTopic = new ConcurrentHashMap<String/*Topic*/, FilterDataMapByTopic>(256);
+    private ConcurrentMap<String/*Topic*/, FilterDataMapByTopic> filterDataByTopic = new ConcurrentHashMap<String/*Topic*/, FilterDataMapByTopic>(256);
 
     private transient BrokerController brokerController;
     private transient BloomFilter bloomFilter;
@@ -80,7 +79,6 @@ public class ConsumerFilterManager extends ConfigManager {
         if (ExpressionType.isTagType(type)) {
             return null;
         }
-
         ConsumerFilterData consumerFilterData = new ConsumerFilterData();
         consumerFilterData.setTopic(topic);
         consumerFilterData.setConsumerGroup(consumerGroup);
@@ -90,35 +88,23 @@ public class ConsumerFilterManager extends ConfigManager {
         consumerFilterData.setExpressionType(type);
         consumerFilterData.setClientVersion(clientVersion);
         try {
-            consumerFilterData.setCompiledExpression(
-                FilterFactory.INSTANCE.get(type).compile(expression)
-            );
+            consumerFilterData.setCompiledExpression(FilterFactory.INSTANCE.get(type).compile(expression));
         } catch (Throwable e) {
             log.error("parse error: expr={}, topic={}, group={}, error={}", expression, topic, consumerGroup, e.getMessage());
             return null;
         }
-
         return consumerFilterData;
     }
 
     public void register(final String consumerGroup, final Collection<SubscriptionData> subList) {
         for (SubscriptionData subscriptionData : subList) {
-            register(
-                subscriptionData.getTopic(),
-                consumerGroup,
-                subscriptionData.getSubString(),
-                subscriptionData.getExpressionType(),
-                subscriptionData.getSubVersion()
-            );
+            register(subscriptionData.getTopic(), consumerGroup, subscriptionData.getSubString(), subscriptionData.getExpressionType(), subscriptionData.getSubVersion());
         }
-
         // make illegal topic dead.
         Collection<ConsumerFilterData> groupFilterData = getByGroup(consumerGroup);
-
         Iterator<ConsumerFilterData> iterator = groupFilterData.iterator();
         while (iterator.hasNext()) {
             ConsumerFilterData filterData = iterator.next();
-
             boolean exist = false;
             for (SubscriptionData subscriptionData : subList) {
                 if (subscriptionData.getTopic().equals(filterData.getTopic())) {
@@ -126,7 +112,6 @@ public class ConsumerFilterManager extends ConfigManager {
                     break;
                 }
             }
-
             if (!exist && !filterData.isDead()) {
                 filterData.setDeadTime(System.currentTimeMillis());
                 log.info("Consumer filter changed: {}, make illegal topic dead:{}", consumerGroup, filterData);
@@ -139,21 +124,16 @@ public class ConsumerFilterManager extends ConfigManager {
         if (ExpressionType.isTagType(type)) {
             return false;
         }
-
         if (expression == null || expression.length() == 0) {
             return false;
         }
-
         FilterDataMapByTopic filterDataMapByTopic = this.filterDataByTopic.get(topic);
-
         if (filterDataMapByTopic == null) {
             FilterDataMapByTopic temp = new FilterDataMapByTopic(topic);
             FilterDataMapByTopic prev = this.filterDataByTopic.putIfAbsent(topic, temp);
             filterDataMapByTopic = prev != null ? prev : temp;
         }
-
         BloomFilterData bloomFilterData = bloomFilter.generate(consumerGroup + "#" + topic);
-
         return filterDataMapByTopic.register(consumerGroup, expression, type, bloomFilterData, clientVersion);
     }
 
@@ -235,15 +215,11 @@ public class ConsumerFilterManager extends ConfigManager {
                 if (dataMapByTopic == null) {
                     continue;
                 }
-
                 for (String group : dataMapByTopic.getGroupFilterData().keySet()) {
-
                     ConsumerFilterData filterData = dataMapByTopic.getGroupFilterData().get(group);
-
                     if (filterData == null) {
                         continue;
                     }
-
                     try {
                         filterData.setCompiledExpression(
                             FilterFactory.INSTANCE.get(filterData.getExpressionType()).compile(filterData.getExpression())
@@ -251,7 +227,6 @@ public class ConsumerFilterManager extends ConfigManager {
                     } catch (Exception e) {
                         log.error("load filter data error, " + filterData, e);
                     }
-
                     // check whether bloom filter is changed
                     // if changed, ignore the bit map calculated before.
                     if (!this.bloomFilter.isValid(filterData.getBloomFilterData())) {
@@ -259,9 +234,7 @@ public class ConsumerFilterManager extends ConfigManager {
                         log.info("Bloom filter is changed!So ignore all filter data persisted! {}, {}", this.bloomFilter, filterData.getBloomFilterData());
                         break;
                     }
-
                     log.info("load exist consumer filter data: {}", filterData);
-
                     if (filterData.getDeadTime() == 0) {
                         // we think all consumers are dead when load
                         long deadTime = System.currentTimeMillis() - 30 * 1000;
@@ -271,7 +244,6 @@ public class ConsumerFilterManager extends ConfigManager {
                     }
                 }
             }
-
             if (!bloomChanged) {
                 this.filterDataByTopic = load.filterDataByTopic;
             }

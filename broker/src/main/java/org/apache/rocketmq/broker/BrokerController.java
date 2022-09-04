@@ -163,7 +163,7 @@ public class BrokerController {
         this.brokerOuterAPI = new BrokerOuterAPI(nettyClientConfig);
         this.filterServerManager = new FilterServerManager(this);
 
-        this.slaveSynchronize = new SlaveSynchronize(this);
+        this.slaveSynchronize = new SlaveSynchronize(this); // 从节点同步数据
 
         this.sendThreadPoolQueue = new LinkedBlockingQueue<Runnable>(this.brokerConfig.getSendThreadPoolQueueCapacity());
         this.pullThreadPoolQueue = new LinkedBlockingQueue<Runnable>(this.brokerConfig.getPullThreadPoolQueueCapacity());
@@ -371,9 +371,8 @@ public class BrokerController {
                 log.info("Set user specified name server address: {}", this.brokerConfig.getNamesrvAddr());
             } else if (this.brokerConfig.isFetchNamesrvAddrByAddressServer()) {
                 this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-
                     @Override
-                    public void run() {
+                    public void run() { // 每120秒拉取一下最新的NameServer地址
                         try {
                             BrokerController.this.brokerOuterAPI.fetchNameServerAddr();
                         } catch (Throwable e) {
@@ -817,20 +816,17 @@ public class BrokerController {
         if (this.messageStore != null) {
             this.messageStore.start(); // 启动核心的消息存储组件
         }
-        //K2 Broker中启动了两个Netty服务，这样就可以接收请求了。
-        if (this.remotingServer != null) {
+        if (this.remotingServer != null) { // Broker中启动了两个Netty服务，这样就可以接收请求了。
             this.remotingServer.start();
         }
         if (this.fastRemotingServer != null) {
             this.fastRemotingServer.start();
         }
-        //跟文件相关的一个服务组件，暂不关注
-        if (this.fileWatchService != null) {
+        if (this.fileWatchService != null) { //跟文件相关的一个服务组件，暂不关注
             this.fileWatchService.start();
         }
-        //K2 Broker的brokerOuterAPI可以理解为一个Netty客户端。往外发送请求的，例如心跳。
         if (this.brokerOuterAPI != null) {
-            this.brokerOuterAPI.start();
+            this.brokerOuterAPI.start();// Broker的brokerOuterAPI可以理解为一个Netty客户端。往外发送请求的，例如心跳。
         }
         //下面这几个都是实现功能的核心组件，暂时不用深究。
         if (this.pullRequestHoldService != null) {
@@ -847,7 +843,7 @@ public class BrokerController {
             handleSlaveSynchronize(messageStoreConfig.getBrokerRole());
             this.registerBrokerAll(true, false, true);
         }
-        //K2 Broker核心的心跳注册任务。该任务间隔时间默认是30秒
+        // Broker核心的心跳注册任务。该任务间隔时间默认是30秒
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
@@ -880,37 +876,28 @@ public class BrokerController {
     }
 
     public synchronized void registerBrokerAll(final boolean checkOrderConfig, boolean oneway, boolean forceRegister) {
-        //Topic配置相关的东东
+        // 获取注册的所有Topic信息，即topicConfigTable缓存信息
         TopicConfigSerializeWrapper topicConfigWrapper = this.getTopicConfigManager().buildTopicConfigSerializeWrapper();
         if (!PermName.isWriteable(this.getBrokerConfig().getBrokerPermission()) || !PermName.isReadable(this.getBrokerConfig().getBrokerPermission())) {
             ConcurrentHashMap<String, TopicConfig> topicConfigTable = new ConcurrentHashMap<String, TopicConfig>();
-            for (TopicConfig topicConfig : topicConfigWrapper.getTopicConfigTable().values()) {
+            for (TopicConfig topicConfig : topicConfigWrapper.getTopicConfigTable().values()) { //Topic配置相关的配置
                 TopicConfig tmp = new TopicConfig(topicConfig.getTopicName(), topicConfig.getReadQueueNums(), topicConfig.getWriteQueueNums(), this.brokerConfig.getBrokerPermission());
                 topicConfigTable.put(topicConfig.getTopicName(), tmp);
             }
             topicConfigWrapper.setTopicConfigTable(topicConfigTable);
         }
-        //这里才是比较关键的地方。先判断是否需要注册，然后调用doRegisterBrokerAll方法真正去注册。
-        if (forceRegister || needRegister(this.brokerConfig.getBrokerClusterName(), this.getBrokerAddr(), this.brokerConfig.getBrokerName(),
-                this.brokerConfig.getBrokerId(), this.brokerConfig.getRegisterBrokerTimeoutMills())) {
-            doRegisterBrokerAll(checkOrderConfig, oneway, topicConfigWrapper);
+        // 这里才是比较关键的地方。先判断是否需要注册，然后调用doRegisterBrokerAll方法真正去注册。
+        if (forceRegister || needRegister(this.brokerConfig.getBrokerClusterName(), this.getBrokerAddr(), this.brokerConfig.getBrokerName(), this.brokerConfig.getBrokerId(), this.brokerConfig.getRegisterBrokerTimeoutMills())) {
+            doRegisterBrokerAll(checkOrderConfig, oneway, topicConfigWrapper); // 发送心跳或注册，将Topic信息同步到NameServer
         }
     }
 
     //K2 roker注册最核心的部分
     private void doRegisterBrokerAll(boolean checkOrderConfig, boolean oneway, TopicConfigSerializeWrapper topicConfigWrapper) {
         //为什么返回的是个List？这就是因为Broker是向所有的NameServer进行注册。
-        List<RegisterBrokerResult> registerBrokerResultList = this.brokerOuterAPI.registerBrokerAll(
-                this.brokerConfig.getBrokerClusterName(),
-                this.getBrokerAddr(),
-                this.brokerConfig.getBrokerName(),
-                this.brokerConfig.getBrokerId(),
-                this.getHAServerAddr(),
-                topicConfigWrapper,
-                this.filterServerManager.buildNewFilterServerList(),
-                oneway,
-                this.brokerConfig.getRegisterBrokerTimeoutMills(),
-                this.brokerConfig.isCompressedRegister());
+        List<RegisterBrokerResult> registerBrokerResultList = this.brokerOuterAPI.registerBrokerAll(this.brokerConfig.getBrokerClusterName(), this.getBrokerAddr(),
+                this.brokerConfig.getBrokerName(), this.brokerConfig.getBrokerId(), this.getHAServerAddr(), topicConfigWrapper, this.filterServerManager.buildNewFilterServerList(),
+                oneway, this.brokerConfig.getRegisterBrokerTimeoutMills(), this.brokerConfig.isCompressedRegister());
         //如果注册结果的数量大于0，那么就对结果进行处理
         if (registerBrokerResultList.size() > 0) {
             RegisterBrokerResult registerBrokerResult = registerBrokerResultList.get(0);

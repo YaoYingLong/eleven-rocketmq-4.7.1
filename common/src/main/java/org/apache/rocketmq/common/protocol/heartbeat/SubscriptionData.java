@@ -27,12 +27,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class SubscriptionData implements Comparable<SubscriptionData> {
-    public final static String SUB_ALL = "*";
+    public final static String SUB_ALL = "*"; // 默认tag表达式
     private boolean classFilterMode = false;
     private String topic;
-    private String subString;
-    private Set<String> tagsSet = new HashSet<String>();
-    private Set<Integer> codeSet = new HashSet<Integer>();
+    private String subString;   // tag原始表达式
+    private Set<String> tagsSet = new HashSet<String>(); // 去重后的Tag
+    private Set<Integer> codeSet = new HashSet<Integer>(); // 去重后的Tag的hashCode
     private long subVersion = System.currentTimeMillis();
     private String expressionType = ExpressionType.TAG;
 

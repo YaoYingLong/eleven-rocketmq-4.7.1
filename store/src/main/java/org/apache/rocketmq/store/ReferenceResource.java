@@ -55,11 +55,8 @@ public abstract class ReferenceResource {
 
     public void release() {
         long value = this.refCount.decrementAndGet();
-        if (value > 0)
-            return;
-
+        if (value > 0) return;
         synchronized (this) {
-
             this.cleanupOver = this.cleanup(value);
         }
     }

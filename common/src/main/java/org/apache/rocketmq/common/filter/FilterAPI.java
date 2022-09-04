@@ -40,11 +40,10 @@ public class FilterAPI {
         SubscriptionData subscriptionData = new SubscriptionData();
         subscriptionData.setTopic(topic);
         subscriptionData.setSubString(subString);
-
         if (null == subString || subString.equals(SubscriptionData.SUB_ALL) || subString.length() == 0) {
-            subscriptionData.setSubString(SubscriptionData.SUB_ALL);
+            subscriptionData.setSubString(SubscriptionData.SUB_ALL); // 若未设置或设置为空或为*，这统一设置为*
         } else {
-            String[] tags = subString.split("\\|\\|");
+            String[] tags = subString.split("\\|\\|"); // 多个Tag
             if (tags.length > 0) {
                 for (String tag : tags) {
                     if (tag.length() > 0) {
@@ -59,7 +58,6 @@ public class FilterAPI {
                 throw new Exception("subString split error");
             }
         }
-
         return subscriptionData;
     }
 
@@ -72,12 +70,10 @@ public class FilterAPI {
         if (subString == null || subString.length() < 1) {
             throw new IllegalArgumentException("Expression can't be null! " + type);
         }
-
         SubscriptionData subscriptionData = new SubscriptionData();
         subscriptionData.setTopic(topic);
         subscriptionData.setSubString(subString);
         subscriptionData.setExpressionType(type);
-
         return subscriptionData;
     }
 }

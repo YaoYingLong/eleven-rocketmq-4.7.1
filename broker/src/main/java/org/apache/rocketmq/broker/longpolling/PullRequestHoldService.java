@@ -50,7 +50,6 @@ public class PullRequestHoldService extends ServiceThread {
                 mpr = prev;
             }
         }
-
         mpr.addPullRequest(pullRequest);
     }
 
@@ -124,9 +123,8 @@ public class PullRequestHoldService extends ServiceThread {
                     if (newestOffset <= request.getPullFromThisOffset()) {
                         newestOffset = this.brokerController.getMessageStore().getMaxOffsetInQueue(topic, queueId);
                     }
-                    //判断是否有新的消息
-                    if (newestOffset > request.getPullFromThisOffset()) {
-                        //检查新的消息是否是ConsumeQueue感兴趣的消息
+                    if (newestOffset > request.getPullFromThisOffset()) { // 判断是否有新的消息，若有新的消息
+                        // 检查新的消息是否是ConsumeQueue感兴趣的消息
                         boolean match = request.getMessageFilter().isMatchedByConsumeQueue(tagsCode, new ConsumeQueueExt.CqExtUnit(tagsCode, msgStoreTime, filterBitMap));
                         // match by bit map, need eval again when properties is not null.
                         if (match && properties != null) {
@@ -141,9 +139,8 @@ public class PullRequestHoldService extends ServiceThread {
                             continue;
                         }
                     }
-                    //请求超时后也给客户端响应。
                     if (System.currentTimeMillis() >= (request.getSuspendTimestamp() + request.getTimeoutMillis())) {
-                        try {
+                        try { // 请求超时后也给客户端响应
                             this.brokerController.getPullMessageProcessor().executeRequestWhenWakeup(request.getClientChannel(), request.getRequestCommand());
                         } catch (Throwable e) {
                             log.error("execute request when wakeup failed.", e);

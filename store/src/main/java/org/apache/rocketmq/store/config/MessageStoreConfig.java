@@ -30,27 +30,24 @@ public class MessageStoreConfig {
     private String storePathCommitLog = System.getProperty("user.home") + File.separator + "store"
         + File.separator + "commitlog";
 
-    // CommitLog file size,default is 1G
+    // CommitLog文件大小默认为1G
     private int mappedFileSizeCommitLog = 1024 * 1024 * 1024;
-    // ConsumeQueue file size,default is 30W
+    // ConsumeQueue文件大小存储数据量默认为30W，且每条消息的大小为20字节，8字节CommitLog的Offset、4字节消息长度、8字节Tag的哈希值，故默认文件大小为5.72M
     private int mappedFileSizeConsumeQueue = 300000 * ConsumeQueue.CQ_STORE_UNIT_SIZE;
     // enable consume queue ext
-    private boolean enableConsumeQueueExt = false;
+    private boolean enableConsumeQueueExt = false; // 是否允许队列扩展
     // ConsumeQueue extend file size, 48M
-    private int mappedFileSizeConsumeQueueExt = 48 * 1024 * 1024;
-    // Bit count of filter bit map.
-    // this will be set by pipe of calculate filter bit map.
+    private int mappedFileSizeConsumeQueueExt = 48 * 1024 * 1024; // 队列扩展大小为48M
+    // Bit count of filter bit map. this will be set by pipe of calculate filter bit map.
     private int bitMapLengthConsumeQueueExt = 64;
 
-    // CommitLog flush interval
-    // flush data to disk
+    // CommitLog flush interval flush data to disk
     @ImportantField
-    private int flushIntervalCommitLog = 500;
+    private int flushIntervalCommitLog = 500; // CommitLog刷新间隔将数据刷新到磁盘，默认500ms
 
-    // Only used if TransientStorePool enabled
-    // flush data to FileChannel
+    // Only used if TransientStorePool enabled flush data to FileChannel
     @ImportantField
-    private int commitIntervalCommitLog = 200;
+    private int commitIntervalCommitLog = 200; // 仅在TransientStorePool启用将数据刷新到FileChannel时使用
 
     /**
      * introduced since 4.0.x. Determine whether to use mutex reentrantLock when putting message.<br/>
@@ -60,11 +57,9 @@ public class MessageStoreConfig {
 
     // Whether schedule flush,default is real-time
     @ImportantField
-    private boolean flushCommitLogTimed = false;
-    // ConsumeQueue flush interval
-    private int flushIntervalConsumeQueue = 1000;
-    // Resource reclaim interval
-    private int cleanResourceInterval = 10000;
+    private boolean flushCommitLogTimed = false; // 是否定时刷盘，默认为实时
+    private int flushIntervalConsumeQueue = 1000; // ConsumeQueue刷盘间隔
+    private int cleanResourceInterval = 10000; // 资源回收间隔10s
     // CommitLog removal interval
     private int deleteCommitLogFilesInterval = 100;
     // ConsumeQueue removal interval
@@ -77,11 +72,11 @@ public class MessageStoreConfig {
     private int diskMaxUsedSpaceRatio = 75;
     // The number of hours to keep a log file before deleting it (in hours)
     @ImportantField
-    private int fileReservedTime = 72;
+    private int fileReservedTime = 72; // 消息文件最长保存时间，单位小时
     // Flow control for ConsumeQueue
-    private int putMsgIndexHightWater = 600000;
+    private int putMsgIndexHightWater = 600000; // ConsumeQueue流控，10h
     // The maximum size of message,default is 4M
-    private int maxMessageSize = 1024 * 1024 * 4;
+    private int maxMessageSize = 1024 * 1024 * 4; // 单个消息最大为4M
     // Whether check the CRC32 of the records consumed.
     // This ensures no on-the-wire or on-disk corruption to the messages occurred.
     // This check adds some overhead,so it may be disabled in cases seeking extreme performance.
@@ -91,7 +86,7 @@ public class MessageStoreConfig {
     // How many pages are to be committed when commit data to file
     private int commitCommitLogLeastPages = 4;
     // Flush page size when the disk in warming state
-    private int flushLeastPagesWhenWarmMapedFile = 1024 / 4 * 16;
+    private int flushLeastPagesWhenWarmMapedFile = 1024 / 4 * 16; // 磁盘处于预热状态时刷新页面大小，默认4K
     // How many pages are to be flushed when flush ConsumeQueue
     private int flushConsumeQueueLeastPages = 2;
     private int flushCommitLogThoroughInterval = 1000 * 10;
@@ -300,10 +295,8 @@ public class MessageStoreConfig {
     public int getDiskMaxUsedSpaceRatio() {
         if (this.diskMaxUsedSpaceRatio < 10)
             return 10;
-
         if (this.diskMaxUsedSpaceRatio > 95)
             return 95;
-
         return diskMaxUsedSpaceRatio;
     }
 
@@ -614,8 +607,7 @@ public class MessageStoreConfig {
      * @return <tt>true</tt> or <tt>false</tt>
      */
     public boolean isTransientStorePoolEnable() {
-        return transientStorePoolEnable && FlushDiskType.ASYNC_FLUSH == getFlushDiskType()
-            && BrokerRole.SLAVE != getBrokerRole();
+        return transientStorePoolEnable && FlushDiskType.ASYNC_FLUSH == getFlushDiskType() && BrokerRole.SLAVE != getBrokerRole();
     }
 
     public void setTransientStorePoolEnable(final boolean transientStorePoolEnable) {

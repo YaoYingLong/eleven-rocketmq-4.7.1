@@ -94,30 +94,23 @@ public class ConsumerManager {
         }
     }
 
-    public boolean registerConsumer(final String group, final ClientChannelInfo clientChannelInfo,
-        ConsumeType consumeType, MessageModel messageModel, ConsumeFromWhere consumeFromWhere,
-        final Set<SubscriptionData> subList, boolean isNotifyConsumerIdsChangedEnable) {
-
+    public boolean registerConsumer(final String group, final ClientChannelInfo clientChannelInfo, ConsumeType consumeType, MessageModel messageModel, ConsumeFromWhere consumeFromWhere, final Set<SubscriptionData> subList, boolean isNotifyConsumerIdsChangedEnable) {
         ConsumerGroupInfo consumerGroupInfo = this.consumerTable.get(group);
         if (null == consumerGroupInfo) {
             ConsumerGroupInfo tmp = new ConsumerGroupInfo(group, consumeType, messageModel, consumeFromWhere);
             ConsumerGroupInfo prev = this.consumerTable.putIfAbsent(group, tmp);
-            consumerGroupInfo = prev != null ? prev : tmp;
+            consumerGroupInfo = prev != null ? prev : tmp; // 若存在旧的消费者组信息则返回旧的
         }
-
-        boolean r1 =
-            consumerGroupInfo.updateChannel(clientChannelInfo, consumeType, messageModel,
-                consumeFromWhere);
-        boolean r2 = consumerGroupInfo.updateSubscription(subList);
-
+        // 是否新建立的Channel，且将ClientChannelInfo缓存到channelInfoTable
+        boolean r1 = consumerGroupInfo.updateChannel(clientChannelInfo, consumeType, messageModel, consumeFromWhere);
+        boolean r2 = consumerGroupInfo.updateSubscription(subList); // 判断心跳信息中Consumer的订阅列表，是否存在新增或删除的
         if (r1 || r2) {
-            if (isNotifyConsumerIdsChangedEnable) {
+            if (isNotifyConsumerIdsChangedEnable) { // 默认为true，通知所有客户端，让客户端执行rebalance
                 this.consumerIdsChangeListener.handle(ConsumerGroupEvent.CHANGE, group, consumerGroupInfo.getAllChannel());
             }
         }
-
+        // 注册ConsumerFilter
         this.consumerIdsChangeListener.handle(ConsumerGroupEvent.REGISTER, group, subList);
-
         return r1 || r2;
     }
 
@@ -155,8 +148,7 @@ public class ConsumerManager {
                 ClientChannelInfo clientChannelInfo = nextChannel.getValue();
                 long diff = System.currentTimeMillis() - clientChannelInfo.getLastUpdateTimestamp();
                 if (diff > CHANNEL_EXPIRED_TIMEOUT) {
-                    log.warn(
-                        "SCAN: remove expired channel from ConsumerManager consumerTable. channel={}, consumerGroup={}",
+                    log.warn("SCAN: remove expired channel from ConsumerManager consumerTable. channel={}, consumerGroup={}",
                         RemotingHelper.parseChannelRemoteAddr(clientChannelInfo.getChannel()), group);
                     RemotingUtil.closeChannel(clientChannelInfo.getChannel());
                     itChannel.remove();

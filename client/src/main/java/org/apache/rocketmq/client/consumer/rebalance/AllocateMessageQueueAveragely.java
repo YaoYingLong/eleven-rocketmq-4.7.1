@@ -45,13 +45,20 @@ public class AllocateMessageQueueAveragely implements AllocateMessageQueueStrate
             log.info("[BUG] ConsumerGroup: {} The consumerId: {} not in cidAll: {}", consumerGroup, currentCID, cidAll);
             return result;
         }
-        int index = cidAll.indexOf(currentCID);
-        int mod = mqAll.size() % cidAll.size();
-        int averageSize = mqAll.size() <= cidAll.size() ? 1 :
-                (mod > 0 && index < mod ? mqAll.size() / cidAll.size() + 1 : mqAll.size() / cidAll.size());
+        int index = cidAll.indexOf(currentCID); // 获取当前客户端ID在消费者集合中的索引位置，cidAll一般是排好序的
+        int mod = mqAll.size() % cidAll.size(); // MessageQueue个数 % 消费者个数，判断有多个MessageQueue无法平均分配
+        // 计算当前消费者可以分几个队列去消费，
+        int averageSize = mqAll.size() <= cidAll.size() ? // 队列个数是否小于等于消费者个数
+                1 : // 队列个数小于消费者个数时，一个消费者只能分到一个queue
+                (mod > 0 && index < mod ? // 队列个数大于消费者个数时，若queue还剩零头，且当前Client在消费者集合中的索引消费该零头
+                        mqAll.size() / cidAll.size() + 1  // 当前client多分配一个queue
+                        : mqAll.size() / cidAll.size()); // 没有零头或当前client在消费者集合中的索引大于等于零头，则平均分配或不管零头
+        // 计算出集合0位置client在MessageQueue中的开始位置时：0 * 3= 0,1位置：1 * 3 = 3； 2位置：2 * 2 + 2 = 6
         int startIndex = (mod > 0 && index < mod) ? index * averageSize : index * averageSize + mod;
+        // 计算出当前消费者可消费queue在MessageQueue集合中的范围
         int range = Math.min(averageSize, mqAll.size() - startIndex);
-        for (int i = 0; i < range; i++) {
+        for (int i = 0; i < range; i++) { // 将计算出的MessageQueue加入到结果中并返回
+            // 当前client所在消费者集合的0位置
             result.add(mqAll.get((startIndex + i) % mqAll.size()));
         }
         return result;

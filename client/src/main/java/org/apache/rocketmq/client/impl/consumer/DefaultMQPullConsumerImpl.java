@@ -105,10 +105,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
 
     private void isRunning() throws MQClientException {
         if (this.serviceState != ServiceState.RUNNING) {
-            throw new MQClientException("The consumer is not in running status, "
-                + this.serviceState
-                + FAQUrl.suggestTodo(FAQUrl.CLIENT_SERVICE_NOT_OK),
-                null);
+            throw new MQClientException("The consumer is not in running status, " + this.serviceState + FAQUrl.suggestTodo(FAQUrl.CLIENT_SERVICE_NOT_OK), null);
         }
     }
 
@@ -358,7 +355,6 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
     @Override
     public Set<SubscriptionData> subscriptions() {
         Set<SubscriptionData> result = new HashSet<SubscriptionData>();
-
         Set<String> topics = this.defaultMQPullConsumer.getRegisterTopics();
         if (topics != null) {
             synchronized (topics) {
@@ -374,7 +370,6 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
                 }
             }
         }
-
         return result;
     }
 
@@ -388,7 +383,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
     @Override
     public void persistConsumerOffset() {
         try {
-            this.isRunning();
+            this.isRunning(); // 若不是RUNNING状态直接抛出异常
             Set<MessageQueue> mqs = new HashSet<MessageQueue>();
             Set<MessageQueue> allocateMq = this.rebalanceImpl.getProcessQueueTable().keySet();
             mqs.addAll(allocateMq);

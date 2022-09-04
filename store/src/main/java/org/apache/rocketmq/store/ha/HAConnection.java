@@ -203,119 +203,85 @@ public class HAConnection {
         @Override
         public void run() {
             HAConnection.log.info(this.getServiceName() + " service started");
-
             while (!this.isStopped()) {
                 try {
                     this.selector.select(1000);
-
                     if (-1 == HAConnection.this.slaveRequestOffset) {
                         Thread.sleep(10);
                         continue;
                     }
-
                     if (-1 == this.nextTransferFromWhere) {
                         if (0 == HAConnection.this.slaveRequestOffset) {
                             long masterOffset = HAConnection.this.haService.getDefaultMessageStore().getCommitLog().getMaxOffset();
-                            masterOffset =
-                                masterOffset
-                                    - (masterOffset % HAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig()
-                                    .getMappedFileSizeCommitLog());
-
+                            masterOffset = masterOffset - (masterOffset % HAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig().getMappedFileSizeCommitLog());
                             if (masterOffset < 0) {
                                 masterOffset = 0;
                             }
-
                             this.nextTransferFromWhere = masterOffset;
                         } else {
                             this.nextTransferFromWhere = HAConnection.this.slaveRequestOffset;
                         }
-
                         log.info("master transfer data from " + this.nextTransferFromWhere + " to slave[" + HAConnection.this.clientAddr
                             + "], and slave request " + HAConnection.this.slaveRequestOffset);
                     }
-
                     if (this.lastWriteOver) {
-
-                        long interval =
-                            HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now() - this.lastWriteTimestamp;
-
-                        if (interval > HAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig()
-                            .getHaSendHeartbeatInterval()) {
-
+                        long interval = HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now() - this.lastWriteTimestamp;
+                        if (interval > HAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig().getHaSendHeartbeatInterval()) {
                             // Build Header
                             this.byteBufferHeader.position(0);
                             this.byteBufferHeader.limit(headerSize);
                             this.byteBufferHeader.putLong(this.nextTransferFromWhere);
                             this.byteBufferHeader.putInt(0);
                             this.byteBufferHeader.flip();
-
                             this.lastWriteOver = this.transferData();
-                            if (!this.lastWriteOver)
-                                continue;
+                            if (!this.lastWriteOver) continue;
                         }
                     } else {
                         this.lastWriteOver = this.transferData();
-                        if (!this.lastWriteOver)
-                            continue;
+                        if (!this.lastWriteOver) continue;
                     }
-
-                    SelectMappedBufferResult selectResult =
-                        HAConnection.this.haService.getDefaultMessageStore().getCommitLogData(this.nextTransferFromWhere);
+                    SelectMappedBufferResult selectResult = HAConnection.this.haService.getDefaultMessageStore().getCommitLogData(this.nextTransferFromWhere);
                     if (selectResult != null) {
                         int size = selectResult.getSize();
                         if (size > HAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig().getHaTransferBatchSize()) {
                             size = HAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig().getHaTransferBatchSize();
                         }
-
                         long thisOffset = this.nextTransferFromWhere;
                         this.nextTransferFromWhere += size;
-
                         selectResult.getByteBuffer().limit(size);
                         this.selectMappedBufferResult = selectResult;
-
                         // Build Header
                         this.byteBufferHeader.position(0);
                         this.byteBufferHeader.limit(headerSize);
                         this.byteBufferHeader.putLong(thisOffset);
                         this.byteBufferHeader.putInt(size);
                         this.byteBufferHeader.flip();
-
                         this.lastWriteOver = this.transferData();
                     } else {
-
                         HAConnection.this.haService.getWaitNotifyObject().allWaitForRunning(100);
                     }
                 } catch (Exception e) {
-
                     HAConnection.log.error(this.getServiceName() + " service has exception.", e);
                     break;
                 }
             }
-
             HAConnection.this.haService.getWaitNotifyObject().removeFromWaitingThreadTable();
-
             if (this.selectMappedBufferResult != null) {
                 this.selectMappedBufferResult.release();
             }
-
             this.makeStop();
-
             readSocketService.makeStop();
-
             haService.removeConnection(HAConnection.this);
-
             SelectionKey sk = this.socketChannel.keyFor(this.selector);
             if (sk != null) {
                 sk.cancel();
             }
-
             try {
                 this.selector.close();
                 this.socketChannel.close();
             } catch (IOException e) {
                 HAConnection.log.error("", e);
             }
-
             HAConnection.log.info(this.getServiceName() + " service end");
         }
 

@@ -73,25 +73,21 @@ public class TopicValidator {
     }
 
     public static boolean validateTopic(String topic, RemotingCommand response) {
-
         if (UtilAll.isBlank(topic)) {
             response.setCode(ResponseCode.SYSTEM_ERROR);
             response.setRemark("The specified topic is blank.");
             return false;
         }
-
         if (!regularExpressionMatcher(topic, PATTERN)) {
             response.setCode(ResponseCode.SYSTEM_ERROR);
             response.setRemark("The specified topic contains illegal characters, allowing only " + VALID_PATTERN_STR);
             return false;
         }
-
         if (topic.length() > TOPIC_MAX_LENGTH) {
             response.setCode(ResponseCode.SYSTEM_ERROR);
             response.setRemark("The specified topic is longer than topic max length.");
             return false;
         }
-
         return true;
     }
 

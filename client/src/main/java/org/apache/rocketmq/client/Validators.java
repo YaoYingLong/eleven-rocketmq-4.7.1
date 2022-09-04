@@ -54,17 +54,12 @@ public class Validators {
         if (UtilAll.isBlank(group)) {
             throw new MQClientException("the specified group is blank", null);
         }
-
         if (group.length() > CHARACTER_MAX_LENGTH) {
             throw new MQClientException("the specified group is longer than group max length 255.", null);
         }
-
         if (!regularExpressionMatcher(group, PATTERN)) {
-            throw new MQClientException(String.format(
-                "the specified group[%s] contains illegal characters, allowing only %s", group,
-                VALID_PATTERN_STR), null);
+            throw new MQClientException(String.format("the specified group[%s] contains illegal characters, allowing only %s", group, VALID_PATTERN_STR), null);
         }
-
     }
 
     /**
@@ -83,8 +78,8 @@ public class Validators {
             throw new MQClientException(ResponseCode.MESSAGE_ILLEGAL, "the message is null");
         }
         // topic
-        Validators.checkTopic(msg.getTopic());
-        Validators.isNotAllowedSendTopic(msg.getTopic());
+        Validators.checkTopic(msg.getTopic()); // 检查topic是否为空，是否包含非法字符，长度是否超过127
+        Validators.isNotAllowedSendTopic(msg.getTopic()); // 检查Topic是否是不允许发送消息，如SCHEDULE_TOPIC_XXXX
         // body
         if (null == msg.getBody()) {
             throw new MQClientException(ResponseCode.MESSAGE_ILLEGAL, "the message body is null");

@@ -139,6 +139,7 @@ public class RouteInfoManager {
                         ConcurrentMap<String, TopicConfig> tcTable = topicConfigWrapper.getTopicConfigTable();
                         if (tcTable != null) {
                             for (Map.Entry<String, TopicConfig> entry : tcTable.entrySet()) {
+                                // 这里很关键，若在多个Broker上有同一个Topic，则这里会添加多个QueueData
                                 this.createAndUpdateQueueData(brokerName, entry.getValue());
                             }
                         }
@@ -211,13 +212,13 @@ public class RouteInfoManager {
             queueDataList.add(queueData);
             this.topicQueueTable.put(topicConfig.getTopicName(), queueDataList);
             log.info("new topic registered, {} {}", topicConfig.getTopicName(), queueData);
-        } else {
+        } else { // 这里很关键，若在多个Broker上有同一个Topic，则这里会添加多个QueueData
             boolean addNewOne = true;
             Iterator<QueueData> it = queueDataList.iterator();
             while (it.hasNext()) {
                 QueueData qd = it.next();
                 if (qd.getBrokerName().equals(brokerName)) {
-                    if (qd.equals(queueData)) {
+                    if (qd.equals(queueData)) { // 说明队列被更新了，需要移除后重新添加进来
                         addNewOne = false;
                     } else {
                         log.info("topic changed, {} OLD: {} NEW: {}", topicConfig.getTopicName(), qd, queueData);
@@ -264,7 +265,6 @@ public class RouteInfoManager {
                 }
             }
         }
-
         return wipeTopicCnt;
     }
 
@@ -345,13 +345,11 @@ public class RouteInfoManager {
                 if (queueDataList != null) {
                     topicRouteData.setQueueDatas(queueDataList);
                     foundQueueData = true;
-
                     Iterator<QueueData> it = queueDataList.iterator();
-                    while (it.hasNext()) {
+                    while (it.hasNext()) { // 遍历所有消息队列，获取Broker列表
                         QueueData qd = it.next();
                         brokerNameSet.add(qd.getBrokerName());
                     }
-
                     for (String brokerName : brokerNameSet) {
                         BrokerData brokerData = this.brokerAddrTable.get(brokerName);
                         if (null != brokerData) {
@@ -371,13 +369,10 @@ public class RouteInfoManager {
         } catch (Exception e) {
             log.error("pickupTopicRouteData Exception", e);
         }
-
         log.debug("pickupTopicRouteData {} {}", topic, topicRouteData);
-
         if (foundBrokerData && foundQueueData) {
             return topicRouteData;
         }
-
         return null;
     }
     //K2 扫描不活动的Broker，超过120s未接收到心跳则移除，该工作每10s执行一次

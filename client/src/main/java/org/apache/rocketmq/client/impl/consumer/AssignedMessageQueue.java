@@ -128,11 +128,11 @@ public class AssignedMessageQueue {
                 if (next.getKey().getTopic().equals(topic)) {
                     if (!assigned.contains(next.getKey())) {
                         next.getValue().getProcessQueue().setDropped(true);
-                        it.remove();
+                        it.remove(); // 移除没有被分配到的processQueue
                     }
                 }
             }
-            addAssignedMessageQueue(assigned);
+            addAssignedMessageQueue(assigned); // 保存新的messageQueue
         }
     }
 
@@ -152,8 +152,9 @@ public class AssignedMessageQueue {
 
     private void addAssignedMessageQueue(Collection<MessageQueue> assigned) {
         for (MessageQueue messageQueue : assigned) {
-            if (!this.assignedMessageQueueState.containsKey(messageQueue)) {
+            if (!this.assignedMessageQueueState.containsKey(messageQueue)) { // 如果是新增的messageQueue
                 MessageQueueState messageQueueState;
+                // 新建或者使用以前的ProcessQueue，新建一个MessageQueueState然后保存
                 if (rebalanceImpl != null && rebalanceImpl.getProcessQueueTable().get(messageQueue) != null) {
                     messageQueueState = new MessageQueueState(messageQueue, rebalanceImpl.getProcessQueueTable().get(messageQueue));
                 } else {

@@ -65,15 +65,17 @@ public class PullAPIWrapper {
 
     public PullResult processPullResult(final MessageQueue mq, final PullResult pullResult, final SubscriptionData subscriptionData) {
         PullResultExt pullResultExt = (PullResultExt) pullResult;
+        // 更新消息队列拉取消息Broker编号的映射
         this.updatePullFromWhichNode(mq, pullResultExt.getSuggestWhichBrokerId());
-        if (PullStatus.FOUND == pullResult.getPullStatus()) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(pullResultExt.getMessageBinary());
+        if (PullStatus.FOUND == pullResult.getPullStatus()) { // 如果成功拉取到消息
+            ByteBuffer byteBuffer = ByteBuffer.wrap(pullResultExt.getMessageBinary());  // 解析消息
             List<MessageExt> msgList = MessageDecoder.decodes(byteBuffer);
+            // 根据订阅信息消息tag匹配合适消息，这里会过滤掉没有订阅的tag消息
             List<MessageExt> msgListFilterAgain = msgList;
             if (!subscriptionData.getTagsSet().isEmpty() && !subscriptionData.isClassFilterMode()) {
                 msgListFilterAgain = new ArrayList<MessageExt>(msgList.size());
                 for (MessageExt msg : msgList) {
-                    if (msg.getTags() != null) {
+                    if (msg.getTags() != null) { // Tag类型的是在客户端处理，SQL类型的在服务端处理
                         if (subscriptionData.getTagsSet().contains(msg.getTags())) {
                             msgListFilterAgain.add(msg);
                         }
@@ -86,7 +88,7 @@ public class PullAPIWrapper {
                 filterMessageContext.setMsgList(msgListFilterAgain);
                 this.executeHook(filterMessageContext);
             }
-            for (MessageExt msg : msgListFilterAgain) {
+            for (MessageExt msg : msgListFilterAgain) {// 设置消息队列当前最小/最大位置到消息拓展字段
                 String traFlag = msg.getProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED);
                 if (Boolean.parseBoolean(traFlag)) {
                     msg.setTransactionId(msg.getProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));
@@ -95,9 +97,9 @@ public class PullAPIWrapper {
                 MessageAccessor.putProperty(msg, MessageConst.PROPERTY_MAX_OFFSET, Long.toString(pullResult.getMaxOffset()));
                 msg.setBrokerName(mq.getBrokerName());
             }
-            pullResultExt.setMsgFoundList(msgListFilterAgain);
+            pullResultExt.setMsgFoundList(msgListFilterAgain); // 设置消息列表
         }
-        pullResultExt.setMessageBinary(null);
+        pullResultExt.setMessageBinary(null); // 清空消息二进制数组
         return pullResult;
     }
 
@@ -129,9 +131,9 @@ public class PullAPIWrapper {
     //K2 消费者拉取消息
     public PullResult pullKernelImpl(final MessageQueue mq, final String subExpression, final String expressionType, final long subVersion, final long offset, final int maxNums, final int sysFlag, final long commitOffset,
                                      final long brokerSuspendMaxTimeMillis, final long timeoutMillis, final CommunicationMode communicationMode, final PullCallback pullCallback) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
-        //找到Broker
+        // 获取Broker地址
         FindBrokerResult findBrokerResult = this.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(), this.recalculatePullFromWhichNode(mq), false);
-        if (null == findBrokerResult) {
+        if (null == findBrokerResult) { // 若未获取到，则从NameServer拉取一遍
             this.mQClientFactory.updateTopicRouteInfoFromNameServer(mq.getTopic());
             findBrokerResult = this.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(), this.recalculatePullFromWhichNode(mq), false);
         }
@@ -153,8 +155,8 @@ public class PullAPIWrapper {
             requestHeader.setQueueOffset(offset);
             requestHeader.setMaxMsgNums(maxNums);
             requestHeader.setSysFlag(sysFlagInner);
-            requestHeader.setCommitOffset(commitOffset);
-            requestHeader.setSuspendTimeoutMillis(brokerSuspendMaxTimeMillis);
+            requestHeader.setCommitOffset(commitOffset); // 顺便提交本地消费进度
+            requestHeader.setSuspendTimeoutMillis(brokerSuspendMaxTimeMillis); // 默认为15s
             requestHeader.setSubscription(subExpression);
             requestHeader.setSubVersion(subVersion);
             requestHeader.setExpressionType(expressionType);
@@ -162,7 +164,7 @@ public class PullAPIWrapper {
             if (PullSysFlag.hasClassFilterFlag(sysFlagInner)) {
                 brokerAddr = computPullFromWhichFilterServer(mq.getTopic(), brokerAddr);
             }
-            //拉取消息
+            // 请求队列所在的Broker拉取消息，timeoutMillis默认为30s
             PullResult pullResult = this.mQClientFactory.getMQClientAPIImpl().pullMessage(brokerAddr, requestHeader, timeoutMillis, communicationMode, pullCallback);
             return pullResult;
         }

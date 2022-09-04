@@ -282,7 +282,6 @@ public class MixAll {
 
     public static Properties object2Properties(final Object object) {
         Properties properties = new Properties();
-
         Field[] fields = object.getClass().getDeclaredFields();
         for (Field field : fields) {
             if (!Modifier.isStatic(field.getModifiers())) {
@@ -295,14 +294,12 @@ public class MixAll {
                     } catch (IllegalAccessException e) {
                         log.error("Failed to handle properties", e);
                     }
-
                     if (value != null) {
                         properties.setProperty(name, value.toString());
                     }
                 }
             }
         }
-
         return properties;
     }
 

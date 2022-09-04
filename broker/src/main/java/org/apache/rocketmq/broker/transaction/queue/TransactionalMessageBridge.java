@@ -114,8 +114,7 @@ public class TransactionalMessageBridge {
         return getMessage(group, topic, queueId, offset, nums, sub);
     }
 
-    private PullResult getMessage(String group, String topic, int queueId, long offset, int nums,
-        SubscriptionData sub) {
+    private PullResult getMessage(String group, String topic, int queueId, long offset, int nums, SubscriptionData sub) {
         GetMessageResult getMessageResult = store.getMessage(group, topic, queueId, offset, nums, null);
 
         if (getMessageResult != null) {
@@ -202,7 +201,7 @@ public class TransactionalMessageBridge {
         MessageAccessor.putProperty(msgInner, MessageConst.PROPERTY_REAL_TOPIC, msgInner.getTopic());
         MessageAccessor.putProperty(msgInner, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msgInner.getQueueId()));
         msgInner.setSysFlag(MessageSysFlag.resetTransactionValue(msgInner.getSysFlag(), MessageSysFlag.TRANSACTION_NOT_TYPE));
-        msgInner.setTopic(TransactionalMessageUtil.buildHalfTopic());
+        msgInner.setTopic(TransactionalMessageUtil.buildHalfTopic());// Topic换成RMQ_SYS_TRANS_HALF_TOPIC
         msgInner.setQueueId(0);
         msgInner.setPropertiesString(MessageDecoder.messageProperties2String(msgInner.getProperties()));
         return msgInner;
@@ -282,8 +281,7 @@ public class TransactionalMessageBridge {
     private TopicConfig selectTopicConfig(String topic) {
         TopicConfig topicConfig = brokerController.getTopicConfigManager().selectTopicConfig(topic);
         if (topicConfig == null) {
-            topicConfig = this.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(
-                topic, 1, PermName.PERM_WRITE | PermName.PERM_READ, 0);
+            topicConfig = this.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(topic, 1, PermName.PERM_WRITE | PermName.PERM_READ, 0);
         }
         return topicConfig;
     }
@@ -321,7 +319,7 @@ public class TransactionalMessageBridge {
 
     private MessageQueue getOpQueueByHalf(MessageQueue halfMQ) {
         MessageQueue opQueue = new MessageQueue();
-        opQueue.setTopic(TransactionalMessageUtil.buildOpTopic());
+        opQueue.setTopic(TransactionalMessageUtil.buildOpTopic()); // 设置Topic为RMQ_SYS_TRANS_OP_HALF_TOPIC
         opQueue.setBrokerName(halfMQ.getBrokerName());
         opQueue.setQueueId(halfMQ.getQueueId());
         return opQueue;

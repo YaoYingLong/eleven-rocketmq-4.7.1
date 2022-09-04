@@ -43,7 +43,7 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
                 }
                 List<Channel> channels = (List<Channel>) args[0];
                 if (channels != null && brokerController.getBrokerConfig().isNotifyConsumerIdsChangedEnable()) {
-                    for (Channel chl : channels) {
+                    for (Channel chl : channels) { // 通知所有客户端，让客户端执行rebalance
                         this.brokerController.getBroker2Client().notifyConsumerIdsChanged(chl, group);
                     }
                 }
@@ -51,7 +51,7 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
             case UNREGISTER:
                 this.brokerController.getConsumerFilterManager().unRegister(group);
                 break;
-            case REGISTER:
+            case REGISTER: // 注册ConsumerFilter
                 if (args == null || args.length < 1) {
                     return;
                 }

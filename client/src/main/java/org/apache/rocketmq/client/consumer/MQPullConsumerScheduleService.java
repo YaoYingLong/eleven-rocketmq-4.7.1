@@ -40,12 +40,10 @@ import org.apache.rocketmq.remoting.RPCHook;
 public class MQPullConsumerScheduleService {
     private final InternalLogger log = ClientLogger.getLog();
     private final MessageQueueListener messageQueueListener = new MessageQueueListenerImpl();
-    private final ConcurrentMap<MessageQueue, PullTaskImpl> taskTable =
-        new ConcurrentHashMap<MessageQueue, PullTaskImpl>();
+    private final ConcurrentMap<MessageQueue, PullTaskImpl> taskTable = new ConcurrentHashMap<MessageQueue, PullTaskImpl>();
     private DefaultMQPullConsumer defaultMQPullConsumer;
     private int pullThreadNums = 20;
-    private ConcurrentMap<String /* topic */, PullTaskCallback> callbackTable =
-        new ConcurrentHashMap<String, PullTaskCallback>();
+    private ConcurrentMap<String /* topic */, PullTaskCallback> callbackTable = new ConcurrentHashMap<String, PullTaskCallback>();
     private ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
     public MQPullConsumerScheduleService(final String consumerGroup) {
@@ -69,30 +67,21 @@ public class MQPullConsumerScheduleService {
                 }
             }
         }
-
         for (MessageQueue mq : mqNewSet) {
             if (!this.taskTable.containsKey(mq)) {
                 PullTaskImpl command = new PullTaskImpl(mq);
                 this.taskTable.put(mq, command);
                 this.scheduledThreadPoolExecutor.schedule(command, 0, TimeUnit.MILLISECONDS);
-
             }
         }
     }
 
     public void start() throws MQClientException {
         final String group = this.defaultMQPullConsumer.getConsumerGroup();
-        this.scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(
-            this.pullThreadNums,
-            new ThreadFactoryImpl("PullMsgThread-" + group)
-        );
-
+        this.scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(this.pullThreadNums, new ThreadFactoryImpl("PullMsgThread-" + group));
         this.defaultMQPullConsumer.setMessageQueueListener(this.messageQueueListener);
-
         this.defaultMQPullConsumer.start();
-
-        log.info("MQPullConsumerScheduleService start OK, {} {}",
-            this.defaultMQPullConsumer.getConsumerGroup(), this.callbackTable);
+        log.info("MQPullConsumerScheduleService start OK, {} {}", this.defaultMQPullConsumer.getConsumerGroup(), this.callbackTable);
     }
 
     public void registerPullTaskCallback(final String topic, final PullTaskCallback callback) {
@@ -145,8 +134,7 @@ public class MQPullConsumerScheduleService {
     class MessageQueueListenerImpl implements MessageQueueListener {
         @Override
         public void messageQueueChanged(String topic, Set<MessageQueue> mqAll, Set<MessageQueue> mqDivided) {
-            MessageModel messageModel =
-                MQPullConsumerScheduleService.this.defaultMQPullConsumer.getMessageModel();
+            MessageModel messageModel = MQPullConsumerScheduleService.this.defaultMQPullConsumer.getMessageModel();
             switch (messageModel) {
                 case BROADCASTING:
                     MQPullConsumerScheduleService.this.putTask(topic, mqAll);

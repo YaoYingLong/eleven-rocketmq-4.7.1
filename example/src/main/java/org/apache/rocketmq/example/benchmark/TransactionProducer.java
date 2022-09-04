@@ -140,8 +140,7 @@ public class TransactionProducer {
                         boolean success = false;
                         final long beginTimestamp = System.currentTimeMillis();
                         try {
-                            SendResult sendResult =
-                                    producer.sendMessageInTransaction(buildMessage(config), null);
+                            SendResult sendResult = producer.sendMessageInTransaction(buildMessage(config), null);
                             success = sendResult != null && sendResult.getSendStatus() == SendStatus.SEND_OK;
                         } catch (Throwable e) {
                             success = false;

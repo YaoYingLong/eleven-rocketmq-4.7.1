@@ -21,11 +21,8 @@ import java.nio.ByteBuffer;
 public class SelectMappedBufferResult {
 
     private final long startOffset;
-
     private final ByteBuffer byteBuffer;
-
     private int size;
-
     private MappedFile mappedFile;
 
     public SelectMappedBufferResult(long startOffset, ByteBuffer byteBuffer, int size, MappedFile mappedFile) {

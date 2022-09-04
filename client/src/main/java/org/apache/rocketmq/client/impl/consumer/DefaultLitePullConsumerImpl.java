@@ -117,8 +117,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
 
     private DefaultLitePullConsumer defaultLitePullConsumer;
 
-    private final ConcurrentMap<MessageQueue, PullTaskImpl> taskTable =
-        new ConcurrentHashMap<MessageQueue, PullTaskImpl>();
+    private final ConcurrentMap<MessageQueue, PullTaskImpl> taskTable = new ConcurrentHashMap<MessageQueue, PullTaskImpl>();
 
     private AssignedMessageQueue assignedMessageQueue = new AssignedMessageQueue();
 
@@ -180,16 +179,16 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
 
     private void updatePullTask(String topic, Set<MessageQueue> mqNewSet) {
         Iterator<Map.Entry<MessageQueue, PullTaskImpl>> it = this.taskTable.entrySet().iterator();
-        while (it.hasNext()) {
+        while (it.hasNext()) { // 移除没有被分配MessageQueue的pullTaskImpl
             Map.Entry<MessageQueue, PullTaskImpl> next = it.next();
             if (next.getKey().getTopic().equals(topic)) {
                 if (!mqNewSet.contains(next.getKey())) {
-                    next.getValue().setCancelled(true);
+                    next.getValue().setCancelled(true); // 这里很关键，对变更的消息队列，这只设置后PullTaskImpl任务中就不会再拉取该队列的消息了
                     it.remove();
                 }
             }
         }
-        startPullTask(mqNewSet);
+        startPullTask(mqNewSet); // 开始拉取任务
     }
 
     class MessageQueueListenerImpl implements MessageQueueListener {
@@ -197,13 +196,15 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
         public void messageQueueChanged(String topic, Set<MessageQueue> mqAll, Set<MessageQueue> mqDivided) {
             MessageModel messageModel = defaultLitePullConsumer.getMessageModel();
             switch (messageModel) {
-                case BROADCASTING:
+                case BROADCASTING: // 广播模式
+                    // 更新AssignedMessageQueue中订阅的MessageQueue，这里传入的是全部的MessageQueue
                     updateAssignedMessageQueue(topic, mqAll);
-                    updatePullTask(topic, mqAll);
+                    updatePullTask(topic, mqAll);  // 开始拉取消息任务
                     break;
                 case CLUSTERING:
+                    // 更新AssignedMessageQueue中订阅的MessageQueue，这里传入的是订阅的MessageQueue
                     updateAssignedMessageQueue(topic, mqDivided);
-                    updatePullTask(topic, mqDivided);
+                    updatePullTask(topic, mqDivided); // 开始拉取消息任务
                     break;
                 default:
                     break;
@@ -233,39 +234,24 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
         switch (this.serviceState) {
             case CREATE_JUST:
                 this.serviceState = ServiceState.START_FAILED;
-
                 this.checkConfig();
-
                 if (this.defaultLitePullConsumer.getMessageModel() == MessageModel.CLUSTERING) {
                     this.defaultLitePullConsumer.changeInstanceNameToPID();
                 }
-
                 initMQClientFactory();
-
                 initRebalanceImpl();
-
                 initPullAPIWrapper();
-
                 initOffsetStore();
-
                 mQClientFactory.start();
-
                 startScheduleTask();
-
                 this.serviceState = ServiceState.RUNNING;
-
                 log.info("the consumer [{}] start OK", this.defaultLitePullConsumer.getConsumerGroup());
-
                 operateAfterRunning();
-
                 break;
             case RUNNING:
             case START_FAILED:
             case SHUTDOWN_ALREADY:
-                throw new MQClientException("The PullConsumer service state not OK, maybe started once, "
-                    + this.serviceState
-                    + FAQUrl.suggestTodo(FAQUrl.CLIENT_SERVICE_NOT_OK),
-                    null);
+                throw new MQClientException("The PullConsumer service state not OK, maybe started once, " + this.serviceState + FAQUrl.suggestTodo(FAQUrl.CLIENT_SERVICE_NOT_OK), null);
             default:
                 break;
         }
@@ -276,10 +262,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
         boolean registerOK = mQClientFactory.registerConsumer(this.defaultLitePullConsumer.getConsumerGroup(), this);
         if (!registerOK) {
             this.serviceState = ServiceState.CREATE_JUST;
-
-            throw new MQClientException("The consumer group[" + this.defaultLitePullConsumer.getConsumerGroup()
-                + "] has been created before, specify another name please." + FAQUrl.suggestTodo(FAQUrl.GROUP_NAME_DUPLICATE_URL),
-                null);
+            throw new MQClientException("The consumer group[" + this.defaultLitePullConsumer.getConsumerGroup() + "] has been created before, specify another name please." + FAQUrl.suggestTodo(FAQUrl.GROUP_NAME_DUPLICATE_URL), null);
         }
     }
 
@@ -291,9 +274,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
     }
 
     private void initPullAPIWrapper() {
-        this.pullAPIWrapper = new PullAPIWrapper(
-            mQClientFactory,
-            this.defaultLitePullConsumer.getConsumerGroup(), isUnitMode());
+        this.pullAPIWrapper = new PullAPIWrapper(mQClientFactory, this.defaultLitePullConsumer.getConsumerGroup(), isUnitMode());
         this.pullAPIWrapper.registerFilterMessageHook(filterMessageHookList);
     }
 
@@ -391,7 +372,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
 
     private void startPullTask(Collection<MessageQueue> mqSet) {
         for (MessageQueue messageQueue : mqSet) {
-            if (!this.taskTable.containsKey(messageQueue)) {
+            if (!this.taskTable.containsKey(messageQueue)) { // 若不存在消息拉取任务，则创建一个消息拉取任务，并执行
                 PullTaskImpl pullTask = new PullTaskImpl(messageQueue);
                 this.taskTable.put(messageQueue, pullTask);
                 this.scheduledThreadPoolExecutor.schedule(pullTask, 0, TimeUnit.MILLISECONDS);
@@ -408,7 +389,6 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
                 it.remove();
             }
         }
-
         startPullTask(mqNewSet);
     }
 
@@ -428,8 +408,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
                 throw new IllegalArgumentException("Topic can not be null or empty.");
             }
             setSubscriptionType(SubscriptionType.SUBSCRIBE);
-            SubscriptionData subscriptionData = FilterAPI.buildSubscriptionData(defaultLitePullConsumer.getConsumerGroup(),
-                topic, subExpression);
+            SubscriptionData subscriptionData = FilterAPI.buildSubscriptionData(defaultLitePullConsumer.getConsumerGroup(), topic, subExpression);
             this.rebalanceImpl.getSubscriptionInner().put(topic, subscriptionData);
             this.defaultLitePullConsumer.setMessageQueueListener(new MessageQueueListenerImpl());
             assignedMessageQueue.setRebalanceImpl(this.rebalanceImpl);
@@ -452,8 +431,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
                 subscribe(topic, SubscriptionData.SUB_ALL);
                 return;
             }
-            SubscriptionData subscriptionData = FilterAPI.build(topic,
-                messageSelector.getExpression(), messageSelector.getExpressionType());
+            SubscriptionData subscriptionData = FilterAPI.build(topic, messageSelector.getExpression(), messageSelector.getExpressionType());
             this.rebalanceImpl.getSubscriptionInner().put(topic, subscriptionData);
             this.defaultLitePullConsumer.setMessageQueueListener(new MessageQueueListenerImpl());
             assignedMessageQueue.setRebalanceImpl(this.rebalanceImpl);
@@ -494,16 +472,13 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
     public synchronized List<MessageExt> poll(long timeout) {
         try {
             checkServiceState();
-            if (timeout < 0)
-                throw new IllegalArgumentException("Timeout must not be negative");
-
-            if (defaultLitePullConsumer.isAutoCommit()) {
-                maybeAutoCommit();
+            if (timeout < 0) throw new IllegalArgumentException("Timeout must not be negative");
+            if (defaultLitePullConsumer.isAutoCommit()) { // 若是自动提交
+                maybeAutoCommit(); // 指的是保存offset到offsetStore, 广播模式则会持久化到本地文件，集群模式则同步到broker
             }
             long endTime = System.currentTimeMillis() + timeout;
-
+            // 这里获取到的就是PullTaskImpl放入consumeRequestCache中的，拉取消息结果
             ConsumeRequest consumeRequest = consumeRequestCache.poll(endTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-
             if (endTime - System.currentTimeMillis() > 0) {
                 while (consumeRequest != null && consumeRequest.getProcessQueue().isDropped()) {
                     consumeRequest = consumeRequestCache.poll(endTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
@@ -511,19 +486,18 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
                         break;
                 }
             }
-
             if (consumeRequest != null && !consumeRequest.getProcessQueue().isDropped()) {
                 List<MessageExt> messages = consumeRequest.getMessageExts();
+                // 移除在processQueue中缓存的消息
                 long offset = consumeRequest.getProcessQueue().removeMessage(messages);
+                // 更新consumerOffset
                 assignedMessageQueue.updateConsumeOffset(consumeRequest.getMessageQueue(), offset);
                 //If namespace not null , reset Topic without namespace.
                 this.resetTopic(messages);
                 return messages;
             }
         } catch (InterruptedException ignore) {
-
         }
-
         return Collections.emptyList();
     }
 
@@ -659,7 +633,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
         } else {
             offset = assignedMessageQueue.getPullOffset(messageQueue);
             if (offset == -1) {
-                offset = fetchConsumeOffset(messageQueue);
+                offset = fetchConsumeOffset(messageQueue); // 拉取最新消费进度offset
             }
         }
         return offset;
@@ -680,83 +654,73 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
 
         @Override
         public void run() {
-
             if (!this.isCancelled()) {
-
-                if (assignedMessageQueue.isPaused(messageQueue)) {
+                if (assignedMessageQueue.isPaused(messageQueue)) { // 若被暂停，则延迟1s执行
                     scheduledThreadPoolExecutor.schedule(this, PULL_TIME_DELAY_MILLS_WHEN_PAUSE, TimeUnit.MILLISECONDS);
                     log.debug("Message Queue: {} has been paused!", messageQueue);
                     return;
                 }
-
                 ProcessQueue processQueue = assignedMessageQueue.getProcessQueue(messageQueue);
-
                 if (null == processQueue || processQueue.isDropped()) {
                     log.info("The message queue not be able to poll, because it's dropped. group={}, messageQueue={}", defaultLitePullConsumer.getConsumerGroup(), this.messageQueue);
-                    return;
+                    return; // 若消息队列镜像为空为已被标记删除，则直接返回
                 }
-
+                // 若Consumer个数 * 批量拉取Size(默认10) > 默认10000，则延迟50ms，超过限制，进行流控
                 if (consumeRequestCache.size() * defaultLitePullConsumer.getPullBatchSize() > defaultLitePullConsumer.getPullThresholdForAll()) {
                     scheduledThreadPoolExecutor.schedule(this, PULL_TIME_DELAY_MILLS_WHEN_FLOW_CONTROL, TimeUnit.MILLISECONDS);
                     if ((consumeRequestFlowControlTimes++ % 1000) == 0)
                         log.warn("The consume request count exceeds threshold {}, so do flow control, consume request count={}, flowControlTimes={}", consumeRequestCache.size(), consumeRequestFlowControlTimes);
                     return;
                 }
-
-                long cachedMessageCount = processQueue.getMsgCount().get();
-                long cachedMessageSizeInMiB = processQueue.getMsgSize().get() / (1024 * 1024);
-
-                if (cachedMessageCount > defaultLitePullConsumer.getPullThresholdForQueue()) {
+                long cachedMessageCount = processQueue.getMsgCount().get(); // 消息总数据量
+                long cachedMessageSizeInMiB = processQueue.getMsgSize().get() / (1024 * 1024); // 消息总大小
+                if (cachedMessageCount > defaultLitePullConsumer.getPullThresholdForQueue()) { // 若总数据量大于1000，延迟50ms，超过限制，进行流控
                     scheduledThreadPoolExecutor.schedule(this, PULL_TIME_DELAY_MILLS_WHEN_FLOW_CONTROL, TimeUnit.MILLISECONDS);
                     if ((queueFlowControlTimes++ % 1000) == 0) {
-                        log.warn(
-                            "The cached message count exceeds the threshold {}, so do flow control, minOffset={}, maxOffset={}, count={}, size={} MiB, flowControlTimes={}",
-                            defaultLitePullConsumer.getPullThresholdForQueue(), processQueue.getMsgTreeMap().firstKey(), processQueue.getMsgTreeMap().lastKey(), cachedMessageCount, cachedMessageSizeInMiB, queueFlowControlTimes);
+                        log.warn("The cached message count exceeds the threshold {}, so do flow control, minOffset={}, maxOffset={}, count={}, size={} MiB, flowControlTimes={}",
+                                defaultLitePullConsumer.getPullThresholdForQueue(), processQueue.getMsgTreeMap().firstKey(), processQueue.getMsgTreeMap().lastKey(), cachedMessageCount, cachedMessageSizeInMiB, queueFlowControlTimes);
                     }
                     return;
                 }
-
-                if (cachedMessageSizeInMiB > defaultLitePullConsumer.getPullThresholdSizeForQueue()) {
+                if (cachedMessageSizeInMiB > defaultLitePullConsumer.getPullThresholdSizeForQueue()) { // 若消息总大小大于100M，则延迟50ms，超过限制，进行流控
                     scheduledThreadPoolExecutor.schedule(this, PULL_TIME_DELAY_MILLS_WHEN_FLOW_CONTROL, TimeUnit.MILLISECONDS);
                     if ((queueFlowControlTimes++ % 1000) == 0) {
-                        log.warn(
-                            "The cached message size exceeds the threshold {} MiB, so do flow control, minOffset={}, maxOffset={}, count={}, size={} MiB, flowControlTimes={}",
+                        log.warn("The cached message size exceeds the threshold {} MiB, so do flow control, minOffset={}, maxOffset={}, count={}, size={} MiB, flowControlTimes={}",
                             defaultLitePullConsumer.getPullThresholdSizeForQueue(), processQueue.getMsgTreeMap().firstKey(), processQueue.getMsgTreeMap().lastKey(), cachedMessageCount, cachedMessageSizeInMiB, queueFlowControlTimes);
                     }
                     return;
                 }
 
-                if (processQueue.getMaxSpan() > defaultLitePullConsumer.getConsumeMaxSpan()) {
+                if (processQueue.getMaxSpan() > defaultLitePullConsumer.getConsumeMaxSpan()) { // 若最大最小offset相差2000，延迟50ms，超过限制，进行流控
                     scheduledThreadPoolExecutor.schedule(this, PULL_TIME_DELAY_MILLS_WHEN_FLOW_CONTROL, TimeUnit.MILLISECONDS);
                     if ((queueMaxSpanFlowControlTimes++ % 1000) == 0) {
-                        log.warn(
-                            "The queue's messages, span too long, so do flow control, minOffset={}, maxOffset={}, maxSpan={}, flowControlTimes={}",
+                        log.warn("The queue's messages, span too long, so do flow control, minOffset={}, maxOffset={}, maxSpan={}, flowControlTimes={}",
                             processQueue.getMsgTreeMap().firstKey(), processQueue.getMsgTreeMap().lastKey(), processQueue.getMaxSpan(), queueMaxSpanFlowControlTimes);
                     }
                     return;
                 }
-
+                // 如果之前调用过seek方法，那么这一次拉取消息会从seekOffset开始, 否则就获取pullOffset
                 long offset = nextPullOffset(messageQueue);
                 long pullDelayTimeMills = 0;
                 try {
                     SubscriptionData subscriptionData;
-                    if (subscriptionType == SubscriptionType.SUBSCRIBE) {
+                    if (subscriptionType == SubscriptionType.SUBSCRIBE) { // 启动前已经订阅，则直接获取订阅信息
                         String topic = this.messageQueue.getTopic();
                         subscriptionData = rebalanceImpl.getSubscriptionInner().get(topic);
-                    } else {
+                    } else { // 其他两种情况则构造一个订阅信息
                         String topic = this.messageQueue.getTopic();
-                        subscriptionData = FilterAPI.buildSubscriptionData(defaultLitePullConsumer.getConsumerGroup(),
-                            topic, SubscriptionData.SUB_ALL);
+                        subscriptionData = FilterAPI.buildSubscriptionData(defaultLitePullConsumer.getConsumerGroup(), topic, SubscriptionData.SUB_ALL);
                     }
-                    
+                    // 从broker获取消息
                     PullResult pullResult = pull(messageQueue, subscriptionData, offset, defaultLitePullConsumer.getPullBatchSize());
-
                     switch (pullResult.getPullStatus()) {
                         case FOUND:
                             final Object objLock = messageQueueLock.fetchLockObject(messageQueue);
                             synchronized (objLock) {
+                                // 拉取的消息不为空 并且 期间seekOffset没有变化
                                 if (pullResult.getMsgFoundList() != null && !pullResult.getMsgFoundList().isEmpty() && assignedMessageQueue.getSeekOffset(messageQueue) == -1) {
-                                    processQueue.putMessage(pullResult.getMsgFoundList());
+                                    processQueue.putMessage(pullResult.getMsgFoundList()); // 保存拉取到的消息到processQueue
+                                    // 构建comsumerRequest，保存到consumeRequestCache中
                                     submitConsumeRequest(new ConsumeRequest(pullResult.getMsgFoundList(), messageQueue, processQueue));
                                 }
                             }
@@ -767,13 +731,13 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
                         default:
                             break;
                     }
+                    // 在assignedMessageQueue中保存下次开始消费的offset
                     updatePullOffset(messageQueue, pullResult.getNextBeginOffset());
-                } catch (Throwable e) {
+                } catch (Throwable e) { // 发生异常则延迟1s执行
                     pullDelayTimeMills = pullTimeDelayMillsWhenException;
                     log.error("An error occurred in pull message process.", e);
                 }
-
-                if (!this.isCancelled()) {
+                if (!this.isCancelled()) { // 将消息丢回任务队列
                     scheduledThreadPoolExecutor.schedule(this, pullDelayTimeMills, TimeUnit.MILLISECONDS);
                 } else {
                     log.warn("The Pull Task is cancelled after doPullTask, {}", messageQueue);
@@ -794,52 +758,36 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
         }
     }
 
-    private PullResult pull(MessageQueue mq, SubscriptionData subscriptionData, long offset, int maxNums)
-        throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+    private PullResult pull(MessageQueue mq, SubscriptionData subscriptionData, long offset, int maxNums) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         return pull(mq, subscriptionData, offset, maxNums, this.defaultLitePullConsumer.getConsumerPullTimeoutMillis());
     }
 
-    private PullResult pull(MessageQueue mq, SubscriptionData subscriptionData, long offset, int maxNums, long timeout)
-        throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+    private PullResult pull(MessageQueue mq, SubscriptionData subscriptionData, long offset, int maxNums, long timeout) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         return this.pullSyncImpl(mq, subscriptionData, offset, maxNums, true, timeout);
     }
 
-    private PullResult pullSyncImpl(MessageQueue mq, SubscriptionData subscriptionData, long offset, int maxNums,
-        boolean block,
-        long timeout)
-        throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
-
+    private PullResult pullSyncImpl(MessageQueue mq, SubscriptionData subscriptionData, long offset, int maxNums, boolean block, long timeout) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         if (null == mq) {
             throw new MQClientException("mq is null", null);
         }
-
         if (offset < 0) {
             throw new MQClientException("offset < 0", null);
         }
-
         if (maxNums <= 0) {
             throw new MQClientException("maxNums <= 0", null);
         }
-
+        // commitOffset=false：不提交offset
+        // block=true：如果队列没有消息，则挂起等待
+        // subscription=true：是否携带订阅信息
+        // classFilter和litePull应该是预留字段，暂时没有作用
         int sysFlag = PullSysFlag.buildSysFlag(false, block, true, false, true);
-
+        // block为true则为30s，否则为10s
         long timeoutMillis = block ? this.defaultLitePullConsumer.getConsumerTimeoutMillisWhenSuspend() : timeout;
-
         boolean isTagType = ExpressionType.isTagType(subscriptionData.getExpressionType());
-        PullResult pullResult = this.pullAPIWrapper.pullKernelImpl(
-            mq,
-            subscriptionData.getSubString(),
-            subscriptionData.getExpressionType(),
-            isTagType ? 0L : subscriptionData.getSubVersion(),
-            offset,
-            maxNums,
-            sysFlag,
-            0,
-            this.defaultLitePullConsumer.getBrokerSuspendMaxTimeMillis(),
-            timeoutMillis,
-            CommunicationMode.SYNC,
-            null
-        );
+        // 发起网络请求，从 broker 拉取消息
+        PullResult pullResult = this.pullAPIWrapper.pullKernelImpl(mq, subscriptionData.getSubString(), subscriptionData.getExpressionType(),
+            isTagType ? 0L : subscriptionData.getSubVersion(), offset, maxNums, sysFlag, 0, this.defaultLitePullConsumer.getBrokerSuspendMaxTimeMillis(),
+            timeoutMillis, CommunicationMode.SYNC, null);
         this.pullAPIWrapper.processPullResult(mq, pullResult, subscriptionData);
         return pullResult;
     }
@@ -848,7 +796,6 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
         if (null == msgList || msgList.size() == 0) {
             return;
         }
-
         //If namespace not null , reset Topic without namespace.
         for (MessageExt messageExt : msgList) {
             if (null != this.defaultLitePullConsumer.getNamespace()) {
@@ -1011,8 +958,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
         return isEqual;
     }
 
-    public synchronized void registerTopicMessageQueueChangeListener(String topic,
-        TopicMessageQueueChangeListener listener) throws MQClientException {
+    public synchronized void registerTopicMessageQueueChangeListener(String topic, TopicMessageQueueChangeListener listener) throws MQClientException {
         if (topic == null || listener == null) {
             throw new MQClientException("Topic or listener is null", null);
         }

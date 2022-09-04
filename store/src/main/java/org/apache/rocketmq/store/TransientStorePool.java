@@ -28,6 +28,9 @@ import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.apache.rocketmq.store.util.LibC;
 import sun.nio.ch.DirectBuffer;
 
+/**
+ * 每个进程都拥有一段连续的虚拟内存，内核并不是以整个虚拟内存为管理单位，而是将整个虚拟内存划分为若干个虚拟内存区域
+ */
 public class TransientStorePool {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
@@ -38,8 +41,8 @@ public class TransientStorePool {
 
     public TransientStorePool(final MessageStoreConfig storeConfig) {
         this.storeConfig = storeConfig;
-        this.poolSize = storeConfig.getTransientStorePoolSize();
-        this.fileSize = storeConfig.getMappedFileSizeCommitLog();
+        this.poolSize = storeConfig.getTransientStorePoolSize();    // 默认为5
+        this.fileSize = storeConfig.getMappedFileSizeCommitLog();   // CommitLog文件大小默认为1G
         this.availableBuffers = new ConcurrentLinkedDeque<>();
     }
 
@@ -49,11 +52,13 @@ public class TransientStorePool {
     public void init() {
         for (int i = 0; i < poolSize; i++) {
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect(fileSize);
-
             final long address = ((DirectBuffer) byteBuffer).address();
             Pointer pointer = new Pointer(address);
-            LibC.INSTANCE.mlock(pointer, new NativeLong(fileSize));
-
+            // Linux下实际调用c.mlock，将进程使用的部分地址空间锁定在物理内存中
+            // 被锁定的物理内存在被解锁或进程退出前，不会被页回收流程处理
+            // 被锁定的物理内存，不会被交换到swap设备
+            // 进程执行mlock操作时，内核会立刻分配物理内存
+            LibC.INSTANCE.mlock(pointer, new NativeLong(fileSize)); // NativeLong是将java的Long类型映射到C的Long类型上传值
             availableBuffers.offer(byteBuffer);
         }
     }
@@ -62,6 +67,7 @@ public class TransientStorePool {
         for (ByteBuffer byteBuffer : availableBuffers) {
             final long address = ((DirectBuffer) byteBuffer).address();
             Pointer pointer = new Pointer(address);
+            // 释放锁定在物理内存中的地址空间，通过NativeLong来传递
             LibC.INSTANCE.munlock(pointer, new NativeLong(fileSize));
         }
     }

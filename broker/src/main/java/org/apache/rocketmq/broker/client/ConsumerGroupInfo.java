@@ -35,10 +35,8 @@ import org.apache.rocketmq.common.protocol.heartbeat.SubscriptionData;
 public class ConsumerGroupInfo {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final String groupName;
-    private final ConcurrentMap<String/* Topic */, SubscriptionData> subscriptionTable =
-        new ConcurrentHashMap<String, SubscriptionData>();
-    private final ConcurrentMap<Channel, ClientChannelInfo> channelInfoTable =
-        new ConcurrentHashMap<Channel, ClientChannelInfo>(16);
+    private final ConcurrentMap<String/* Topic */, SubscriptionData> subscriptionTable = new ConcurrentHashMap<String, SubscriptionData>();
+    private final ConcurrentMap<Channel, ClientChannelInfo> channelInfoTable = new ConcurrentHashMap<Channel, ClientChannelInfo>(16);
     private volatile ConsumeType consumeType;
     private volatile MessageModel messageModel;
     private volatile ConsumeFromWhere consumeFromWhere;
@@ -113,70 +111,51 @@ public class ConsumerGroupInfo {
         return false;
     }
 
-    public boolean updateChannel(final ClientChannelInfo infoNew, ConsumeType consumeType,
-        MessageModel messageModel, ConsumeFromWhere consumeFromWhere) {
+    public boolean updateChannel(final ClientChannelInfo infoNew, ConsumeType consumeType, MessageModel messageModel, ConsumeFromWhere consumeFromWhere) {
         boolean updated = false;
         this.consumeType = consumeType;
         this.messageModel = messageModel;
         this.consumeFromWhere = consumeFromWhere;
-
         ClientChannelInfo infoOld = this.channelInfoTable.get(infoNew.getChannel());
         if (null == infoOld) {
             ClientChannelInfo prev = this.channelInfoTable.put(infoNew.getChannel(), infoNew);
             if (null == prev) {
-                log.info("new consumer connected, group: {} {} {} channel: {}", this.groupName, consumeType,
-                    messageModel, infoNew.toString());
+                log.info("new consumer connected, group: {} {} {} channel: {}", this.groupName, consumeType, messageModel, infoNew.toString());
                 updated = true;
             }
-
             infoOld = infoNew;
         } else {
-            if (!infoOld.getClientId().equals(infoNew.getClientId())) {
-                log.error("[BUG] consumer channel exist in broker, but clientId not equal. GROUP: {} OLD: {} NEW: {} ",
-                    this.groupName,
-                    infoOld.toString(),
-                    infoNew.toString());
+            if (!infoOld.getClientId().equals(infoNew.getClientId())) { // 若ClientID不相等则更新Channel
+                log.error("[BUG] consumer channel exist in broker, but clientId not equal. GROUP: {} OLD: {} NEW: {} ", this.groupName, infoOld.toString(), infoNew.toString());
                 this.channelInfoTable.put(infoNew.getChannel(), infoNew);
             }
         }
-
         this.lastUpdateTimestamp = System.currentTimeMillis();
-        infoOld.setLastUpdateTimestamp(this.lastUpdateTimestamp);
-
+        infoOld.setLastUpdateTimestamp(this.lastUpdateTimestamp); // 设置心跳时间
         return updated;
     }
 
     public boolean updateSubscription(final Set<SubscriptionData> subList) {
         boolean updated = false;
-
-        for (SubscriptionData sub : subList) {
+        for (SubscriptionData sub : subList) { // 处理新增的Topic订阅的消费者组
             SubscriptionData old = this.subscriptionTable.get(sub.getTopic());
             if (old == null) {
                 SubscriptionData prev = this.subscriptionTable.putIfAbsent(sub.getTopic(), sub);
-                if (null == prev) {
+                if (null == prev) { // 若未注册过
                     updated = true;
-                    log.info("subscription changed, add new topic, group: {} {}",
-                        this.groupName,
-                        sub.toString());
+                    log.info("subscription changed, add new topic, group: {} {}", this.groupName, sub.toString());
                 }
             } else if (sub.getSubVersion() > old.getSubVersion()) {
                 if (this.consumeType == ConsumeType.CONSUME_PASSIVELY) {
-                    log.info("subscription changed, group: {} OLD: {} NEW: {}",
-                        this.groupName,
-                        old.toString(),
-                        sub.toString()
-                    );
+                    log.info("subscription changed, group: {} OLD: {} NEW: {}", this.groupName, old.toString(), sub.toString());
                 }
-
                 this.subscriptionTable.put(sub.getTopic(), sub);
             }
         }
-
         Iterator<Entry<String, SubscriptionData>> it = this.subscriptionTable.entrySet().iterator();
-        while (it.hasNext()) {
+        while (it.hasNext()) {  // 处理删除的Topic订阅的消费者组
             Entry<String, SubscriptionData> next = it.next();
             String oldTopic = next.getKey();
-
             boolean exist = false;
             for (SubscriptionData sub : subList) {
                 if (sub.getTopic().equals(oldTopic)) {
@@ -184,21 +163,13 @@ public class ConsumerGroupInfo {
                     break;
                 }
             }
-
             if (!exist) {
-                log.warn("subscription changed, group: {} remove topic {} {}",
-                    this.groupName,
-                    oldTopic,
-                    next.getValue().toString()
-                );
-
+                log.warn("subscription changed, group: {} remove topic {} {}", this.groupName, oldTopic, next.getValue().toString());
                 it.remove();
                 updated = true;
             }
         }
-
         this.lastUpdateTimestamp = System.currentTimeMillis();
-
         return updated;
     }
 

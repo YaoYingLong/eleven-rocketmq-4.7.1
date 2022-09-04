@@ -119,19 +119,20 @@ public class SubscriptionGroupManager extends ConfigManager {
 
     public SubscriptionGroupConfig findSubscriptionGroupConfig(final String group) {
         SubscriptionGroupConfig subscriptionGroupConfig = this.subscriptionGroupTable.get(group);
-        if (null == subscriptionGroupConfig) {
+        if (null == subscriptionGroupConfig) { // 若订阅者组不存在
+            // 判断是否自动创建订阅者组，默认自动创建，以及是否是系统内部的消费者组
             if (brokerController.getBrokerConfig().isAutoCreateSubscriptionGroup() || MixAll.isSysConsumerGroup(group)) {
                 subscriptionGroupConfig = new SubscriptionGroupConfig();
                 subscriptionGroupConfig.setGroupName(group);
+                // 若设置了自动创建订阅者组，或是系统内部的消费者组，则创建订阅者组，并放入缓存
                 SubscriptionGroupConfig preConfig = this.subscriptionGroupTable.putIfAbsent(group, subscriptionGroupConfig);
                 if (null == preConfig) {
                     log.info("auto create a subscription group, {}", subscriptionGroupConfig.toString());
                 }
                 this.dataVersion.nextVersion();
-                this.persist();
+                this.persist();  // 将数据持久化到磁盘
             }
         }
-
         return subscriptionGroupConfig;
     }
 
